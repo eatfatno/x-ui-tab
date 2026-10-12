@@ -1,0 +1,488 @@
+#!/usr/bin/env python3
+"""Linux host management for this Compose deployment (Python 3.10+)."""
+import argparse
+from contextlib import closing
+import fcntl
+from datetime import datetime, timezone
+import getpass
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+import shutil
+import socket
+import sqlite3
+import subprocess
+import sys
+import tarfile
+import time
+import uuid
+
+ROOT = Path(__file__).resolve().parent
+os.umask(0o077)
+CACHE = ROOT / '.cache'
+CACHE.mkdir(exist_ok=True)
+os.environ['TMPDIR'] = str(CACHE)
+os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
+os.environ['DOCKER_CONFIG'] = str(CACHE / 'docker')
+(CACHE / 'docker').mkdir(exist_ok=True)
+DEFAULT_IMAGE = (json.loads((ROOT / 'bundle.json').read_text())['image']
+                 if (ROOT / 'bundle.json').is_file() else 'x-ui-tab:3.9.0-1.0.1-amd64')
+
+
+def run(args, capture=False, data=None, check=True):
+    return subprocess.run(args, cwd=ROOT, check=check, text=True, input=data,
+                          stdout=subprocess.PIPE if capture else None,
+                          stderr=subprocess.PIPE if capture else None,
+                          env=os.environ.copy())
+
+
+def env_values():
+    p = ROOT / '.env'
+    return dict(line.split('=', 1) for line in p.read_text().splitlines() if line and not line.startswith('#')) if p.exists() else {}
+
+
+def write_env(**changes):
+    value = {'XUI_IMAGE': DEFAULT_IMAGE, 'COMPOSE_PROJECT_NAME': 'x-ui-tab', 'RESTART_POLICY': 'unless-stopped'} | env_values() | changes
+    for k, v in value.items():
+        if not re.fullmatch(r'[A-Za-z0-9_.:/@-]+', v):
+            raise ValueError('Invalid deployment environment value: ' + k)
+    temp = ROOT / '.env.new'
+    temp.write_text(''.join(k + '=' + v + '\n' for k, v in value.items()))
+    temp.chmod(0o600)
+    temp.replace(ROOT / '.env')
+
+
+def dc(*args, **kwargs):
+    if not (ROOT / '.env').exists():
+        write_env()
+    # Explicit installation configuration wins over an unrelated shell variable.
+    os.environ.update(env_values())
+    return run(['docker', 'compose', '--project-directory', str(ROOT), '--env-file', str(ROOT / '.env'),
+                '-f', str(ROOT / 'compose.yaml'), *args], **kwargs)
+
+
+def cid():
+    return dc('ps', '-a', '-q', 'panel', capture=True).stdout.strip()
+
+
+def running():
+    ident = cid()
+    return bool(ident and run(['docker', 'inspect', '-f', '{{.State.Running}}', ident], capture=True).stdout.strip() == 'true')
+
+
+def wait_ready():
+    for _ in range(90):
+        ident = cid()
+        if ident:
+            p = run(['docker', 'inspect', '-f', '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}', ident], capture=True)
+            if p.stdout.strip() == 'running healthy':
+                return
+            if p.stdout.split()[0] in ('exited', 'dead'):
+                break
+        time.sleep(1)
+    raise RuntimeError('Container did not become healthy; run x-ui logs for details')
+
+
+def start():
+    dc('up', '-d', '--pull', 'never')
+    wait_ready()
+    print('面板、Xray 和流量监测已启动。')
+
+
+def stop():
+    dc('stop', '-t', '35')
+
+
+def configuration(change):
+    was_running = running()
+    if was_running:
+        stop()
+    try:
+        p = dc('run', '--rm', '--no-deps', '-T', 'panel', 'configure', capture=True, data=json.dumps(change))
+        print(p.stdout.strip())
+    finally:
+        if was_running:
+            start()
+
+
+def settings():
+    if not (ROOT / 'data/panel/x-ui.db').exists():
+        raise RuntimeError('First run x-ui init')
+    if running():
+        out = dc('exec', '-T', 'panel', 'python3', '/app/container.py', 'settings', capture=True)
+    else:
+        out = dc('run', '--rm', '--no-deps', '-T', 'panel', 'settings', capture=True)
+    cfg = json.loads(out.stdout)
+    protocol = 'https' if cfg['tls_cert_file'] else 'http'
+    address = cfg['bind']
+    if address in ('0.0.0.0', '::'):
+        address = '<服务器IP或域名>'
+    elif ':' in address:
+        address = '[' + address + ']'
+    print('版本:', cfg['panel_version'])
+    print('面板:', f"{protocol}://{address}:{cfg['port']}{cfg['base_path']}panel/")
+    print('流量监测:', f"{protocol}://{address}:{cfg['port']}{cfg['base_path']}panel/?monitor=traffic")
+    print('内部面板 / Xray API / 指标端口:', cfg['panel_port'], '/', cfg['xray_api_port'], '/', cfg['metrics_port'])
+    print('保留期: 明细', cfg['detail_days'], '天 / 汇总', cfg['summary_days'], '天')
+    print('配置与数据:', ROOT / 'data')
+    print('首次/CLI 重置凭证:', ROOT / 'data/state/credentials.json')
+    print('在网页修改密码后，请以网页设置为准。')
+
+
+def port_free(bind, port):
+    with socket.socket(socket.AF_INET6 if ':' in bind else socket.AF_INET) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((bind, int(port)))
+
+
+def load_image(path):
+    path = path.resolve()
+    checksum = path.parent / 'SHA256SUMS'
+    if not checksum.exists():
+        raise ValueError('Image archive requires SHA256SUMS alongside it')
+    hashes = {}
+    for line in checksum.read_text().splitlines():
+        sha, name = line.split(maxsplit=1)
+        hashes[name.lstrip('*')] = sha
+    if path.name not in hashes:
+        raise ValueError('Image archive is missing from SHA256SUMS')
+    with path.open('rb') as f:
+        h = hashlib.sha256()
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(chunk)
+    if h.hexdigest() != hashes[path.name]:
+        raise ValueError('Image archive checksum mismatch')
+    run(['docker', 'load', '-i', str(path)])
+
+
+def file_sha(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def checkpoint_manifest():
+    """Bind-mounted regular files have the same device/inode in host and container.
+
+    Record content plus the committed checkpoint while both writers are stopped.
+    Backups can then rebind checkpoints after a filesystem/host move, retaining
+    unread tails and incomplete lines instead of either replaying or skipping.
+    """
+    data = ROOT / 'data'
+    manifest = []
+    dbpath = data / 'monitor/monitor.db'
+    if dbpath.exists():
+        with closing(sqlite3.connect(dbpath)) as db:
+            for f in sorted((data / 'logs').glob('xray-access.log*')):
+                if not re.fullmatch(r'xray-access\.log(?:\.(?:monitor-[0-9]+|[0-9][0-9.\-]*))?', f.name) or f.is_symlink() or not f.is_file():
+                    continue
+                st = f.stat()
+                row = db.execute('SELECT offset,anchor,first_seen,updated_at FROM checkpoints WHERE file_id=?',
+                                 (str(st.st_dev) + ':' + str(st.st_ino),)).fetchone()
+                manifest.append({'path': f.relative_to(data).as_posix(), 'size': st.st_size, 'sha256': file_sha(f),
+                                 'checkpoint': list(row) if row else None})
+    p = data / 'state/backup-checkpoints.json'
+    p.write_text(json.dumps({'version': 1, 'files': manifest}, indent=2) + '\n')
+    p.chmod(0o600)
+
+
+def restore_checkpoints(stage):
+    data = stage / 'data'
+    path = data / 'state/backup-checkpoints.json'
+    if not path.exists():
+        raise ValueError('Backup has no log checkpoint manifest; automatic replay-safe restore refused')
+    value = json.loads(path.read_text())
+    if value.get('version') != 1 or not isinstance(value.get('files'), list):
+        raise ValueError('Unsupported log checkpoint manifest')
+    rows, seen = [], set()
+    for item in value['files']:
+        name = item['path']
+        if not re.fullmatch(r'logs/xray-access\.log(?:\.(?:monitor-[0-9]+|[0-9][0-9.\-]*))?', name) or name in seen:
+            raise ValueError('Invalid or repeated log path in backup')
+        seen.add(name)
+        f = data / name
+        if not f.is_file() or f.is_symlink() or f.stat().st_size != item['size'] or file_sha(f) != item['sha256']:
+            raise ValueError('Backup log content does not match its checkpoint manifest')
+        cp = item['checkpoint']
+        if cp is not None:
+            if len(cp) != 4 or type(cp[0]) is not int or not 0 <= cp[0] <= item['size']:
+                raise ValueError('Invalid committed log offset')
+            st = f.stat()
+            rows.append((str(st.st_dev) + ':' + str(st.st_ino), *cp))
+    actual = {f.relative_to(data).as_posix() for f in (data / 'logs').glob('xray-access.log*')
+              if re.fullmatch(r'xray-access\.log(?:\.(?:monitor-[0-9]+|[0-9][0-9.\-]*))?', f.name) and f.is_file()}
+    if actual != seen:
+        raise ValueError('Backup has unaccounted access logs')
+    dbpath = data / 'monitor/monitor.db'
+    if dbpath.exists():
+        with closing(sqlite3.connect(dbpath)) as db, db:
+            if db.execute('PRAGMA quick_check').fetchone()[0] != 'ok':
+                raise ValueError('Backup monitor database failed integrity check')
+            db.execute('DELETE FROM checkpoints')
+            db.executemany('INSERT INTO checkpoints(file_id,offset,anchor,first_seen,updated_at) VALUES(?,?,?,?,?)', rows)
+
+
+def backup(leave_stopped=False):
+    if not (ROOT / 'data/panel/x-ui.db').exists():
+        raise RuntimeError('There is no initialized data to back up')
+    was_running = running()
+    if was_running:
+        stop()
+    dest = ROOT / 'backups'
+    dest.mkdir(exist_ok=True)
+    archive = dest / ('x-ui-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + secrets.token_hex(3) + '.tar.gz')
+    try:
+        checkpoint_manifest()
+        with tarfile.open(archive.with_suffix('.part'), 'w:gz', compresslevel=2) as tar:
+            tar.add(ROOT / 'data', arcname='data', filter=lambda m: None if m.name == 'data/tmp' or m.name.startswith('data/tmp/') else m)
+            tar.add(ROOT / '.env', arcname='.env')
+        archive.with_suffix('.part').replace(archive)
+        archive.chmod(0o600)
+        print('备份（包含凭证与私钥，请私密保存）:', archive)
+        return archive
+    finally:
+        if was_running and not leave_stopped:
+            start()
+
+
+def prepare_restore(archive):
+    stage = CACHE / ('restore-' + uuid.uuid4().hex)
+    stage.mkdir()
+    try:
+        with tarfile.open(archive, 'r:gz') as tar:
+            total = 0
+            for m in tar.getmembers():
+                target = (stage / m.name).resolve()
+                if not target.is_relative_to(stage) or m.name.startswith('/') or not (m.name == '.env' or m.name == 'data' or m.name.startswith('data/')):
+                    raise ValueError('Backup contains an unsafe path')
+                if not m.isdir() and not m.isfile():
+                    raise ValueError('Backup contains a link or special file')
+                total += m.size
+                if total > 10 * 1024**3:
+                    raise ValueError('Backup expands beyond the 10 GiB restore limit')
+            if sys.version_info >= (3, 12):
+                tar.extractall(stage, filter='data')
+            else:
+                tar.extractall(stage)  # Only the validated regular files/directories above.
+        if not (stage / 'data/panel/x-ui.db').is_file() or not (stage / 'data/state/deployment.json').is_file():
+            raise ValueError('Backup lacks required databases or configuration')
+        env = dict(line.split('=', 1) for line in (stage / '.env').read_text().splitlines() if line and not line.startswith('#'))
+        if set(env) != {'XUI_IMAGE', 'COMPOSE_PROJECT_NAME', 'RESTART_POLICY'} or any(not re.fullmatch(r'[A-Za-z0-9_.:/@-]+', v) for v in env.values()):
+            raise ValueError('Backup has invalid deployment settings')
+        run(['docker', 'image', 'inspect', env['XUI_IMAGE']], capture=True)
+        restore_checkpoints(stage)
+        return stage, env
+    except Exception:
+        shutil.rmtree(stage)
+        raise
+
+
+def apply_restore(stage, saved_env):
+    # Retain replaced data for manual recovery; never recursively delete it.
+    old = ROOT / 'backups' / ('replaced-data-' + uuid.uuid4().hex)
+    old.parent.mkdir(exist_ok=True)
+    if (ROOT / 'data').exists():
+        (ROOT / 'data').rename(old)
+    (stage / 'data').rename(ROOT / 'data')
+    # Keep this installation's project identity so restore cannot control another stack.
+    write_env(XUI_IMAGE=saved_env['XUI_IMAGE'], RESTART_POLICY=saved_env['RESTART_POLICY'])
+    shutil.rmtree(stage)
+
+
+def restore(path, yes):
+    if not yes:
+        raise ValueError('Restore replaces the current data. Use --yes after checking the backup path.')
+    stage, saved = prepare_restore(path)
+    if (ROOT / 'data/panel/x-ui.db').exists():
+        backup(leave_stopped=True)
+    dc('down', '-t', '35')
+    apply_restore(stage, saved)
+    start()
+
+
+def update(image):
+    if not re.fullmatch(r'[A-Za-z0-9_.:/@-]+', image):
+        raise ValueError('Invalid image name')
+    out = run(['docker', 'run', '--rm', '--pull=never', '--network', 'none', '--entrypoint', 'cat', image, '/app/manifest.json'], capture=True)
+    manifest = json.loads(out.stdout)
+    current = json.loads((ROOT / 'data/core/release.json').read_text())
+    def version(value):
+        if not re.fullmatch(r'\d+\.\d+\.\d+', value):
+            raise ValueError('Only stable release versions are accepted')
+        return tuple(map(int, value.split('.')))
+    if version(manifest['panel_version']) < version(current['panel_version']):
+        raise ValueError('Database downgrade refused; restore a matching backup instead')
+    previous_image = env_values()['XUI_IMAGE']
+    snapshot = backup(leave_stopped=True)
+    try:
+        write_env(XUI_IMAGE=image)
+        dc('up', '-d', '--force-recreate', '--pull', 'never')
+        wait_ready()
+    except Exception:
+        print('更新启动失败，正在恢复更新前镜像与一致性备份。', file=sys.stderr)
+        dc('down', '-t', '35')
+        stage, saved = prepare_restore(snapshot)
+        apply_restore(stage, saved)
+        write_env(XUI_IMAGE=previous_image)
+        start()
+        raise RuntimeError('Update failed; previous image and data restored') from None
+    print('更新成功，监测配置与历史继续保留。')
+
+
+def tls_import(cert, key):
+    # Validate the pair before copying or stopping anything.
+    import ssl
+    ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER).load_cert_chain(cert, key)
+    folder = ROOT / 'data/certs'
+    folder.mkdir(parents=True, exist_ok=True)
+    stamp = secrets.token_hex(6)
+    cert_dest, key_dest = folder / (stamp + '.crt'), folder / (stamp + '.key')
+    shutil.copyfile(cert, cert_dest)
+    shutil.copyfile(key, key_dest)
+    key_dest.chmod(0o600)
+    configuration({'tls_cert_file': '/data/certs/' + cert_dest.name, 'tls_key_file': '/data/certs/' + key_dest.name})
+
+
+def menu():
+    actions = [
+        ('启动 / 安装服务', lambda: start()), ('停止', lambda: stop()),
+        ('重启', lambda: (stop(), start())), ('状态', lambda: dc('ps', '-a')),
+        ('查看最近日志', lambda: dc('logs', '--tail', '100')),
+        ('重启 Xray', lambda: dc('exec', '-T', 'panel', 'python3', '/app/container.py', 'xray-restart')),
+        ('重置用户名与密码', lambda: credentials(None)),
+        ('修改访问路径', lambda: configuration({'base_path': input('新路径，例如 /my-panel/：').strip()})),
+        ('修改公开面板端口', lambda: change_port(int(input('新端口：')))),
+        ('查看设置和凭证文件位置', settings),
+        ('导入 HTTPS 证书', lambda: tls_import(Path(input('证书绝对路径：').strip()), Path(input('私钥绝对路径：').strip()))),
+        ('关闭 HTTPS', lambda: configuration({'tls_cert_file': '', 'tls_key_file': ''})),
+        ('启用 Docker 自动重启', lambda: autostart(True)), ('关闭 Docker 自动重启', lambda: autostart(False)),
+        ('更新到已导入的镜像', lambda: update(input('已导入镜像名称：').strip())),
+        ('备份数据与配置', backup),
+        ('恢复备份', lambda: restore(Path(input('备份文件路径：').strip()), input('覆盖当前数据，输入 RESTORE 确认：') == 'RESTORE')),
+        ('卸载容器（保留数据）', lambda: dc('down', '-t', '35') if input('输入 REMOVE 确认：') == 'REMOVE' else None),
+        ('关闭两步验证', lambda: configuration({'reset_two_factor': True}) if input('输入 RESET 确认：') == 'RESET' else None),
+        ('重建监测采集 Token', lambda: configuration({'rotate_token': True})),
+    ]
+    while True:
+        print('\n3x-ui + 流量监测 · Docker 管理菜单\n部署目录：' + str(ROOT))
+        for i, (label, _) in enumerate(actions, 1):
+            print(f' {i:2}. {label}')
+        print('  0. 退出')
+        try:
+            choice = input('请选择 [0-20]：').strip()
+            if choice == '0':
+                return
+            if choice.isdigit() and 1 <= int(choice) <= len(actions):
+                actions[int(choice)-1][1]()
+            else:
+                print('请输入菜单中的编号。')
+        except (EOFError, KeyboardInterrupt):
+            return
+        except Exception as e:
+            print('操作未完成：' + safe_error(e))
+
+
+def safe_error(error):
+    # subprocess errors can contain credential input; never echo their captured output.
+    if isinstance(error, subprocess.CalledProcessError):
+        return 'Docker/Compose 命令失败；请运行 x-ui logs 查看服务日志。'
+    return str(error) if isinstance(error, (ValueError, RuntimeError, OSError)) else type(error).__name__
+
+
+def credentials(username, stdin=False):
+    username = username or input('用户名：').strip()
+    password = sys.stdin.readline().rstrip('\r\n') if stdin else getpass.getpass('新密码（至少 12 位；留空则随机生成）：')
+    password = password or secrets.token_urlsafe(24)
+    configuration({'credentials': {'username': username, 'password': password}})
+    print('凭证已写入:', ROOT / 'data/state/credentials.json')
+
+
+def change_port(port):
+    cfg = json.loads((ROOT / 'data/state/deployment.json').read_text())
+    if port != cfg['port']:
+        port_free(cfg['bind'], port)
+        configuration({'port': port})
+
+
+def autostart(on):
+    write_env(RESTART_POLICY='unless-stopped' if on else 'no')
+    ident = cid()
+    if ident:
+        run(['docker', 'update', '--restart=' + ('unless-stopped' if on else 'no'), ident])
+    print('Docker 重启策略已更新；服务器开机启动还需要 Docker 服务自身已启用。')
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Docker 版 3x-ui 管理；无参数打开交互菜单。')
+    commands = parser.add_subparsers(dest='action')
+    for name in ('start', 'stop', 'restart', 'status', 'settings', 'backup', 'restart-xray', 'rotate-token', 'reset-2fa', 'tls-off'):
+        commands.add_parser(name)
+    p = commands.add_parser('init')
+    p.add_argument('--bind', default='0.0.0.0'); p.add_argument('--port', type=int, default=18080)
+    p.add_argument('--panel-port', type=int, default=12053); p.add_argument('--api-port', type=int, default=62789)
+    p.add_argument('--metrics-port', type=int, default=11111); p.add_argument('--base-path', default='/')
+    p.add_argument('--project-name', default='x-ui-tab'); p.add_argument('--image', default=DEFAULT_IMAGE)
+    p = commands.add_parser('load'); p.add_argument('archive', type=Path, nargs='?', default=ROOT / 'image.tar.gz')
+    p = commands.add_parser('logs'); p.add_argument('--follow', action='store_true'); p.add_argument('--tail', type=int, default=100)
+    p = commands.add_parser('credentials'); p.add_argument('--username'); p.add_argument('--password-stdin', action='store_true')
+    p = commands.add_parser('base-path'); p.add_argument('path')
+    p = commands.add_parser('port'); p.add_argument('port', type=int)
+    p = commands.add_parser('autostart'); p.add_argument('mode', choices=['on', 'off'])
+    p = commands.add_parser('tls'); p.add_argument('certificate', type=Path); p.add_argument('key', type=Path)
+    p = commands.add_parser('update'); p.add_argument('image')
+    p = commands.add_parser('restore'); p.add_argument('archive', type=Path); p.add_argument('--yes', action='store_true')
+    p = commands.add_parser('remove'); p.add_argument('--yes', action='store_true')
+    args = parser.parse_args()
+    lock = (CACHE / 'management.lock').open('a')
+    if args.action not in ('status', 'settings', 'logs'):
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError('Another x-ui management operation or menu is open; close it before changing settings') from None
+    if args.action is None:
+        menu()
+    elif args.action == 'init':
+        if (ROOT / 'data/panel/x-ui.db').exists():
+            raise ValueError('Deployment already initialized; use individual management commands')
+        for bind, port in [(args.bind, args.port), *[('127.0.0.1', p) for p in (args.panel_port, args.api_port, args.metrics_port)]]:
+            port_free(bind, port)
+        write_env(COMPOSE_PROJECT_NAME=args.project_name, XUI_IMAGE=args.image)
+        configuration(dict(bind=args.bind, port=args.port, panel_port=args.panel_port, xray_api_port=args.api_port,
+                           metrics_port=args.metrics_port, base_path=args.base_path))
+        start(); settings()
+    elif args.action == 'load': load_image(args.archive)
+    elif args.action == 'start': start()
+    elif args.action == 'stop': stop()
+    elif args.action == 'restart': stop(); start()
+    elif args.action == 'status': dc('ps', '-a')
+    elif args.action == 'settings': settings()
+    elif args.action == 'logs': dc('logs', '--tail', str(max(1, min(args.tail, 10000))), *(['--follow'] if args.follow else []))
+    elif args.action == 'credentials': credentials(args.username, args.password_stdin)
+    elif args.action == 'base-path': configuration({'base_path': args.path})
+    elif args.action == 'port': change_port(args.port)
+    elif args.action == 'backup': backup()
+    elif args.action == 'restore': restore(args.archive.resolve(), args.yes)
+    elif args.action == 'update': update(args.image)
+    elif args.action == 'tls': tls_import(args.certificate, args.key)
+    elif args.action == 'tls-off': configuration({'tls_cert_file': '', 'tls_key_file': ''})
+    elif args.action == 'autostart': autostart(args.mode == 'on')
+    elif args.action == 'rotate-token': configuration({'rotate_token': True})
+    elif args.action == 'reset-2fa': configuration({'reset_two_factor': True})
+    elif args.action == 'restart-xray': dc('exec', '-T', 'panel', 'python3', '/app/container.py', 'xray-restart')
+    elif args.action == 'remove':
+        if not args.yes:
+            raise ValueError('Use remove --yes to remove containers while keeping data')
+        dc('down', '-t', '35')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (Exception, KeyboardInterrupt) as error:
+        print(safe_error(error), file=sys.stderr)
+        sys.exit(1)

@@ -1,0 +1,12 @@
+*
+!Dockerfile
+!panel/
+!panel/**
+!traffic-monitor
+!www/
+!www/**
+!container.py
+!default-xray.json
+!manifest.json
+!licenses/
+!licenses/**

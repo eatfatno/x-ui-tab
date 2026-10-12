@@ -1,0 +1,37 @@
+name: ${COMPOSE_PROJECT_NAME:-x-ui-tab}
+services:
+  panel:
+    image: ${XUI_IMAGE:-x-ui-tab:3.9.0-1.0.1-amd64}
+    network_mode: host
+    restart: ${RESTART_POLICY:-unless-stopped}
+    stop_grace_period: 40s
+    environment:
+      TZ: Asia/Shanghai
+      PYTHONDONTWRITEBYTECODE: "1"
+      TMPDIR: /data/tmp
+      XUI_IN_DOCKER: "true"
+      XUI_LOG_LEVEL: warning
+      XUI_MAIN_FOLDER: /app
+      XUI_BIN_FOLDER: /data/core/bin
+      XUI_DB_FOLDER: /data/panel
+      XUI_LOG_FOLDER: /data/logs
+      XUI_MEMORY_LIMIT: "192"
+      GOMEMLIMIT: 192MiB
+      GOMAXPROCS: "1"
+    volumes:
+      - ./data:/data
+    mem_limit: 640m
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test: [CMD, python3, /app/container.py, health]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3

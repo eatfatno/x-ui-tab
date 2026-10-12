@@ -1,0 +1,12 @@
+export type Client = { id: string; email: string; inbound_ids: number[]; deleted: boolean; up: number; down: number; last_seen: string };
+export type Summary = { up: number; down: number; total: number; visit_count: number; panel_up: number; panel_down: number; monitor_started_at: string; detail_available_from: string; summary_available_from: string; last_visit_at?: string; quality: string[]; timezone: string };
+export type TrafficPoint = { time: string; up: number; down: number };
+export type Destination = { key: string; name: string; domain: string; kind: string };
+export type Visit = { id: number; time: string; client_id: string; email: string; target: string; destination: Destination; port: number; protocol: string; inbound: string; outbound: string; status: string };
+export type Visits = { items: Visit[]; total: number; page: number; page_size: number; expired: boolean };
+export type TargetSummary = { key: string; client_id: string; email: string; destination: Destination; visit_count: number; targets: string[]; target_count: number; ports: number[]; protocols: string[]; inbounds: string[]; first_seen: string; last_seen: string };
+export type Targets = { items: TargetSummary[]; total: number; page: number; page_size: number; expired: boolean };
+export type HistoryPreview = { start: string; end: string; client_id: string; client_count: number; visit_count: number; summary_visit_count: number; traffic_buckets: number; up: number; down: number; total: number; preview_token: string; expires_at: string };
+export type Health = { status: string; panel_version: string; adapter_compatible: boolean; last_sample_at: string; last_log_at: string; monitor_started_at: string; detail_days: number; summary_days: number; timezone: string; issues: string[] };
+export type LiveClient = { id: string; email: string; inbound_ids: number[]; status: 'online' | 'offline' | 'unknown'; rate_state: string; up: number | null; down: number | null; up_per_second: number | null; down_per_second: number | null };
+export type LiveSnapshot = { updated_at: string; sample_seconds: number; interval_seconds: number; online_available: boolean; stale: boolean; items: LiveClient[] };

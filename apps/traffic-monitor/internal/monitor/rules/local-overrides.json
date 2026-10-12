@@ -1,0 +1,21 @@
+{
+  "wechat": {"name":"微信 / WeChat","domain":"weixin.qq.com","suffix":["weixin.qq.com","weixin.com","wechat.com","wechatapp.com","wx.qq.com","wx2.qq.com","wx8.qq.com","weixinbridge.com","wxapp.tc.qq.com"]},
+  "qqmusic": {"name":"QQ 音乐","domain":"y.qq.com","suffix":["y.qq.com","music.qq.com","qqmusic.qq.com","qqmusic.com","y.gtimg.cn"]},
+  "tencent-video": {"name":"腾讯视频","domain":"v.qq.com","suffix":["v.qq.com","video.qq.com","vv.video.qq.com","video.gtimg.com"]},
+  "qqmail": {"name":"QQ 邮箱","domain":"mail.qq.com","suffix":["mail.qq.com","qqmail.com"]},
+  "taobao": {"name":"淘宝","domain":"taobao.com","suffix":["taobao.com","taobao.net","tb.cn"]},
+  "tmall": {"name":"天猫","domain":"tmall.com","suffix":["tmall.com","tmall.hk"]},
+  "alipay": {"name":"支付宝","domain":"alipay.com","suffix":["alipay.com","alipayobjects.com","alipay.com.cn","alipay.hk"]},
+  "weibo": {"name":"微博","domain":"weibo.com","suffix":["weibo.com","weibo.cn","weibocdn.com"]},
+  "netease-music": {"name":"网易云音乐","domain":"music.163.com","suffix":["music.163.com","music.126.net"]},
+  "baidu-pan": {"name":"百度网盘","domain":"pan.baidu.com","suffix":["pan.baidu.com","yun.baidu.com","baidupcs.com"]},
+  "baidu-tieba": {"name":"百度贴吧","domain":"tieba.baidu.com","suffix":["tieba.baidu.com","tieba.com","tiebaimg.com"]},
+  "baidu-map": {"name":"百度地图","domain":"map.baidu.com","suffix":["map.baidu.com","api.map.baidu.com"]},
+  "gmail": {"name":"Gmail","domain":"mail.google.com","suffix":["mail.google.com","gmail.com","googlemail.com"]},
+  "google-drive": {"name":"Google Drive 云端硬盘","domain":"drive.google.com","suffix":["drive.google.com","drive.usercontent.google.com"]},
+  "google-maps": {"name":"Google Maps 地图","domain":"maps.google.com","suffix":["maps.google.com","maps.googleapis.com","maps.gstatic.com"]},
+  "microsoft-teams": {"name":"Microsoft Teams","domain":"teams.microsoft.com","suffix":["teams.microsoft.com","teams.live.com","teams.cloud.microsoft"]},
+  "outlook": {"name":"Outlook 邮箱","domain":"outlook.com","suffix":["outlook.com","outlook.office.com","outlook.office365.com","hotmail.com"]},
+  "office": {"name":"Microsoft 365 / Office","domain":"office.com","suffix":["office.com","office365.com","officeapps.live.com","microsoft365.com"]},
+  "pypi": {"name":"PyPI","domain":"pypi.org","suffix":["pypi.org","pythonhosted.org"]}
+}

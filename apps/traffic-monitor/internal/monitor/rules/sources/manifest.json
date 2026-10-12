@@ -1,0 +1,117 @@
+{
+  "commit": "036c097eb26c6a52c4f04ebcb6633043cb942669",
+  "sources": [
+    {
+      "file": "YouTube.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/YouTube/YouTube.list",
+      "sha256": "a8e4819c3ee2ba71c06873769310ec012a3aa2e8fc54843168ae6edef6e75280",
+      "service": "youtube",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "Telegram.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/Telegram/Telegram.list",
+      "sha256": "0e99a027795b51c495e3bd97c854b147898c5e598ece47bd79515a419aab25e1",
+      "service": "telegram",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "Twitter.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/Twitter/Twitter.list",
+      "sha256": "64c836f2431ca0d4728cc545bb74280ee50c886e346040012e6cdd2f3eee3f97",
+      "service": "twitter",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "OpenAI.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/OpenAI/OpenAI.list",
+      "sha256": "6f4047cdbf6953cf5d9b38c4ccd6da7bc6f1acb91b7a87134f25d5b8f5d2408b",
+      "service": "openai",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "WeChat.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/WeChat/WeChat.list",
+      "sha256": "ce1f7bea47157c267e0da7da4d5bc68915aca5c24b4c126c7e27b4127a0dfc54",
+      "service": "wechat",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "BiliBili.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/BiliBili/BiliBili.list",
+      "sha256": "78cedfd87e436fff5ba5c720ece34c235566667526ac03a31d945c5334c70d85",
+      "service": "bilibili",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "TikTok.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/TikTok/TikTok.list",
+      "sha256": "7146b733ee239b6818d496aec1640cf1e962b39cda823388ce98d83761a6c885",
+      "service": "tiktok",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "DouYin.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/DouYin/DouYin.list",
+      "sha256": "020e742fe4a7084268af6aa52c4153bf5bfd54c4d7a17466f42cd3461609e32a",
+      "service": "douyin",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "Instagram.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/Instagram/Instagram.list",
+      "sha256": "65f28f9253b0dbb2a81485c788537896a0817766685e7bd91b2f90ec7aa19548",
+      "service": "instagram",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "Spotify.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/Spotify/Spotify.list",
+      "sha256": "0832138646a9425340a62743e0a1f847f681b571b1d28d07372a97dd6fd46efd",
+      "service": "spotify",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "Netflix.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/Netflix/Netflix.list",
+      "sha256": "9ceac35682ac97d17223d90e08c4e56b52c072b1698d746a2d22444110318b57",
+      "service": "netflix",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "AliPay.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/AliPay/AliPay.list",
+      "sha256": "23d7ca5404f4795d485b4ea700f45e1d94f2dbf0f2871eeca5298cfce81ff5be",
+      "service": "alipay",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "Pinduoduo.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/Pinduoduo/Pinduoduo.list",
+      "sha256": "fcddc414628d2a336b6ef3394eae6d17d6588ad0043ce60486b2c31be57291d0",
+      "service": "pinduoduo",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "XiaoHongShu.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/rule/Clash/XiaoHongShu/XiaoHongShu.list",
+      "sha256": "9fb20e80dc0962cfdf410ffbd72d6bf2a6a0ac0d930951880f98164ff229e8ff",
+      "service": "xiaohongshu",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "file": "LICENSE.ios_rule_script.txt",
+      "url": "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/036c097eb26c6a52c4f04ebcb6633043cb942669/LICENSE",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+      "service": "",
+      "license": "see source"
+    },
+    {
+      "file": "telegram-cidr.txt",
+      "url": "https://core.telegram.org/resources/cidr.txt",
+      "sha256": "3ecd072cedf72eceee6961b18a51e37f905d5ce4a656a5d24cf5fea63e6ec651",
+      "service": "telegram",
+      "license": "see source"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "description": "Reviewed app endpoints; website, API, media and app variants use one service key. Shared infrastructure stays separate.",
+  "approved": {
+    "youtube": ["video.google.com"],
+    "telegram": ["legra.ph", "stel.com", "telegramdownload.com"],
+    "twitter": ["twimg.co", "twimg.org"],
+    "openai": ["openai-api.arkoselabs.com", "chat.openai.com.cdn.cloudflare.net", "openaiapi-site.azureedge.net", "openaicom.imgix.net"],
+    "wechat": ["apd-pcdnwxlogin.teg.tencent-cloud.net", "vweixinf.tc.qq.com", "weixin110.qq.com", "vweixinthumb.tc.qq.com", "servicewechat.com", "wechatlegal.net", "wechatos.net", "wechatpay.com", "weixinsxy.com", "wx.gtimg.com", "wxs.qq.com"],
+    "bilibili": ["p.bstarstatic.com", "p-bstarstatic.akamaized.net", "upos-bstar-mirrorakam.akamaized.net", "upos-bstar1-mirrorakam.akamaized.net", "bilibili.co", "biliintl.co", "hdslb.net", "hdslb.com.w.kunlunhuf.com", "hdslb.com.w.kunlunpi.com", "upos-hz-mirrorakam.akamaized.net", "uposdash-302-bilivideo.yfcdn.net"],
+    "tiktok": ["tiktokmusic.app"],
+    "douyin": ["v5-dy-o-abtest.zjcdn.com"],
+    "instagram": ["instagr.am"],
+    "spotify": ["spotify.app.link", "spotifynewsroom.jp", "spotilocal.com", "audio-ak-spotify-com.akamaized.net", "heads4-ak-spotify-com.akamaized.net", "spotify-com.akamaized.net"],
+    "netflix": ["h-netflix.online-metrix.net", "netflix.com.edgesuite.net", "netflix.com.au", "netflixstudios.com"],
+    "alipay": ["alipay", "alipay-corp.com", "alipay-eco.com", "alipay-inc.com", "alipay-traffic.com", "alipay.cn", "alipay.net", "alipaydesign.com", "alipaydev.com", "alipaydns.com", "alipayeshop.com", "alipaylog.com", "alipaymo.com", "alipayplus.com"]
+  },
+  "exclude_shared": ["browser-intake-datadoghq.com", "host.livekit.cloud", "turn.livekit.cloud"],
+  "families": {
+    "bilibili-game": "bilibili", "bilibili2": "bilibili", "bilibili-cdn": "bilibili",
+    "lark-global": "lark", "x": "twitter", "spotify": "spotify"
+  }
+}
