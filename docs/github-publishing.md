@@ -48,14 +48,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1
 
 6. 保持正式版本，**不勾选 pre-release**，点击 **Publish release**。仅保存草稿不能供公开安装脚本下载。
 
-源码与发布包分别来自同一项目。在线安装器及发布操作工具位于源码仓库；v1.0.1 Docker 包修复了慢磁盘首次启动时，健康检查提前创建空数据库的问题；面板和监测功能沿用已经验证的实现。旧 1.0.0 包保留在本地，GitHub 首次发布使用修复后的 1.0.1。
+源码与发布包分别来自同一项目。在线安装器及发布操作工具位于源码仓库；v1.0.1 Docker 包修复了慢磁盘首次启动时，健康检查提前创建空数据库的问题；面板和监测功能沿用已经验证的实现。GitHub 首次发布使用修复后的 1.0.1。
 
 ## 3. 服务器安装
 
-Ubuntu 22.04/24.04 x86_64 服务器执行：
+正式部署使用 Linux x86_64 / amd64 宿主机上的 Docker Engine + Compose v2，无需 Windows 或 WSL。Ubuntu、CentOS Stream 等发行版的依赖与配置条件见 [系统环境与依赖](docker-deployment.md#系统环境与依赖)；WSL 仅是本项目使用的开发与验证环境。
+
+Ubuntu 22.04/24.04 服务器执行，脚本可安装缺少的依赖：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1
+```
+
+CentOS Stream 等其他发行版先准备 Docker、Compose v2、Python 3.10+ 等依赖，以及适用的 SELinux 数据目录配置，再执行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1 --no-install-deps
 ```
 
 若 `raw.githubusercontent.com` 连接被重置或超时，可使用 GitHub 官方 API 的原始文件响应：
@@ -64,7 +72,7 @@ curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/in
 curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.1' | sudo bash -s -- --version v1.0.1
 ```
 
-两个入口都固定为 `v1.0.1`，脚本内容相同，不经过第三方镜像，不需要 GitHub 凭证。备用入口仍需要访问 GitHub API 和 Release 附件 CDN。如果 `curl` 尚未安装，Ubuntu 先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
+两个入口都固定为 `v1.0.1`，脚本内容相同，不经过第三方镜像，不需要 GitHub 凭证。其他发行版使用 API 入口时也加 `--no-install-deps`。备用入口仍需要访问 GitHub API 和 Release 附件 CDN。如果 `curl` 尚未安装，Ubuntu 先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
 
 默认目录 `/opt/x-ui-tab`，首次账号密码文件 `/opt/x-ui-tab/data/state/credentials.json`。使用 `sudo x-ui` 管理；原来已有其他 x-ui 时使用 `sudo x-ui-tab`，完整路径 `/opt/x-ui-tab/x-ui` 始终可用。Web 密码修改后请以实际设置为准。
 

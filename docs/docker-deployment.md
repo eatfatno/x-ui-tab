@@ -1,6 +1,17 @@
 # Docker 部署与 Linux x-ui 管理
 
-此部署包包含官方 3x-ui v3.9.0、Xray、独立 Go 流量监测服务及 React 页面。目标平台为 **Linux x86_64 / amd64**，需要 Docker Engine、Compose v2 和 Python 3.10 或更新版本。Ubuntu 22.04/24.04 可使用。当前未交付 ARM 镜像。
+此部署包包含官方 3x-ui v3.9.0、Xray、独立 Go 流量监测服务及 React 页面，通过 **Docker Engine + Compose v2 直接部署到 Linux 服务器**，不需要 Windows 或 WSL。目标平台为 **Linux x86_64 / amd64**，当前未交付 ARM 镜像。
+
+## 系统环境与依赖
+
+Ubuntu、CentOS Stream、Debian、Rocky Linux、AlmaLinux 等发行版使用相同 Docker 镜像和管理命令。宿主机需要正在运行的本地 Docker Engine、Compose v2、Python 3.10+，以及 Bash、curl、tar/gzip、coreutils 和 util-linux。`python3` 命令本身必须满足版本要求，因为安装和 `x-ui` 管理工具在宿主机运行；只在容器里提供 Python 不足以运行管理工具。
+
+- **Ubuntu 22.04/24.04**：在线安装脚本可准备缺少的依赖。
+- **CentOS Stream 等其他 Linux**：先按该发行版的方式安装上述依赖，再使用 `--no-install-deps`，或按下文手工部署。脚本不会自动配置这些发行版的软件源。
+
+可以用 `sudo docker info`、`sudo docker compose version`、`sudo python3 --version` 检查环境。当前 Docker 包的实际安装与浏览器验收在 WSL Ubuntu 24.04 完成；干净 Ubuntu 的自动依赖安装、CentOS Stream 及其他发行版尚未实机验收。
+
+CentOS Stream 等宿主机若启用了 SELinux 容器访问控制，需要为专用数据目录配置容器标签。当前 Compose 文件未自动添加标签：可采用下文的手工部署流程，在包校验完成后、首次 `x-ui init` 前，将 `compose.yaml` 中的数据卷 `./data:/data` 改为 `./data:/data:Z`，由 Docker 为该部署的专用目录设置标签。该目录应仅供本部署使用。
 
 ## 新服务器安装
 
@@ -142,7 +153,7 @@ sudo x-ui remove --yes        # 删除本部署容器；保留 data 和 backups
 
 ## 本机构建与验证
 
-源码在 `deploy/docker/`，构建/打包脚本在 `scripts/`。本机 WSL 使用项目目录内的独立 Docker daemon，其所有镜像层、构建缓存、socket、日志位于 `cache/docker-engine/`，不改动默认 daemon 的已有镜像。ext4 工作磁盘文件容量为 8 GiB，在当前 Windows 挂载盘上也可能占用完整 8 GiB；它是开发构建缓存，不随交付包上传服务器。
+本节是维护者的可选开发流程，服务器安装用户使用已经发布的包即可。源码在 `deploy/docker/`，构建/打包脚本在 `scripts/`，原生开发实例见 [本地开发说明](local-development.md)。本机 WSL 使用项目目录内的独立 Docker daemon，其所有镜像层、构建缓存、socket、日志位于 `cache/docker-engine/`，不改动默认 daemon 的已有镜像。ext4 工作磁盘文件容量为 8 GiB，在当前 Windows 挂载盘上也可能占用完整 8 GiB；它是开发构建缓存，不随交付包上传服务器。
 
 ```bash
 source scripts/env.sh

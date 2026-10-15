@@ -1,6 +1,6 @@
-# x-ui-tab：基于 3x-ui 的非官方流量监测扩展
+# x-ui-tab：基于原版 3x-ui 改造的流量监测面板
 
-x-ui-tab 在原版 3x-ui 面板基础上增加流量监测、访问目标识别和部署管理功能，由独立的监测服务与页面实现。本仓库是社区扩展，不是 3x-ui 官方项目或官方发行版。
+x-ui-tab 基于 [MHSanaei/3x-ui](https://github.com/MHSanaei/3x-ui) 进行功能扩展，在原面板基础上增加流量监测、访问目标识别和部署管理功能，以 **Docker 部署到 Linux 服务器**。新增功能由独立的监测服务与页面实现。本仓库由 eatfatno 维护，不是原作者发布的官方版本。
 
 - **上游原项目**：[3x-ui](https://github.com/MHSanaei/3x-ui)，由 [MHSanaei](https://github.com/MHSanaei) 及其贡献者维护。原面板和代理管理功能来自该项目，相关版权归原作者及贡献者所有。
 - **本扩展项目**：[eatfatno/x-ui-tab](https://github.com/eatfatno/x-ui-tab)，由 [eatfatno](https://github.com/eatfatno) 维护，负责本仓库的流量监测扩展、集成与部署工具。
@@ -17,14 +17,27 @@ x-ui-tab 在原版 3x-ui 面板基础上增加流量监测、访问目标识别�
 
 流量用量来自客户端累计值采样，访问目标来自 Xray 日志；不提供每个目标或每条连接的精确字节数，也不提供 HTTPS 完整路径或页面内容。域名规则来自社区规则集，来源和许可证见 [第三方组件说明](THIRD_PARTY_NOTICES.md)。本项目代码采用 [GPL-3.0](LICENSE)，第三方组件保留各自的版权和许可。
 
-## 在 Linux 服务器安装
+## Docker 部署到 Linux 服务器
 
-面向 **Linux x86_64 / amd64**。一键脚本在 Ubuntu 22.04/24.04 上可安装缺少的 Docker、Compose v2 和 Python；其他 Linux 发行版请先准备 Docker、Compose v2、Python 3.10+、curl 和 util-linux，并在命令末尾增加 `--no-install-deps`。
+正式发布包使用 **Docker Engine + Compose v2**，目标平台为 **Linux x86_64 / amd64**。可在 Ubuntu、CentOS Stream 等 Linux 服务器上按下列条件部署，**不需要 Windows 或 WSL**。WSL 只是本项目使用的本地开发与测试环境。
 
-**[v1.0.1 Release](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1) 已发布**，包含部署包及校验文件。执行：
+| 服务器环境 | 安装方式 |
+| --- | --- |
+| Ubuntu 22.04 / 24.04 | 一键脚本可安装缺少的 Docker、Compose v2 和 Python |
+| CentOS Stream、Debian、Rocky Linux、AlmaLinux 等其他 Linux | 自行准备 Docker Engine、Compose v2、Python 3.10+、curl 和 util-linux，再加 `--no-install-deps` 安装 |
+
+宿主机的 `python3` 命令需为 3.10 或更新版本，用于运行安装和管理工具；Docker 服务需已启动。CentOS Stream 等启用 SELinux 的环境还需处理数据目录的容器访问标签，见 [Docker 部署说明](docs/docker-deployment.md#系统环境与依赖)。当前 Docker 验收在 WSL Ubuntu 24.04 完成，其他发行版尚未实机验收；当前未提供 ARM 镜像。
+
+**[v1.0.1 Release](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1) 已发布**，包含部署包及校验文件。Ubuntu 22.04/24.04 执行：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1
+```
+
+CentOS Stream 等其他 Linux 在准备好依赖和宿主机配置后执行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1 --no-install-deps
 ```
 
 如果当前网络访问 `raw.githubusercontent.com` 被重置或超时，可改用 GitHub 官方 API 取得同一版本的脚本，无需 GitHub 登录：
@@ -33,7 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/in
 curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.1' | sudo bash -s -- --version v1.0.1
 ```
 
-两个入口执行同一脚本，均从 GitHub Release 下载部署包；需要能访问 GitHub API 及 Release 附件 CDN。如果服务器没有 `curl`，Ubuntu 可先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
+两个入口执行同一脚本，均从 GitHub Release 下载部署包；需要能访问 GitHub API 及 Release 附件 CDN。其他 Linux 使用 API 入口时，同样在末尾加 `--no-install-deps`。如果服务器没有 `curl`，Ubuntu 可先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
 
 默认安装目录 `/opt/x-ui-tab`，面板入口 `http://服务器IP:18080/panel/?monitor=traffic`。首次账号密码文件 `/opt/x-ui-tab/data/state/credentials.json`，密码随机生成。执行 `sudo x-ui` 打开管理菜单；如果已有其他 `x-ui` 安装，使用 `sudo x-ui-tab`。
 
@@ -41,7 +54,9 @@ curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/
 
 发布与公开安装验收见 [GitHub 发布说明](docs/github-publishing.md)。GitHub Actions 自动构建与在线升级菜单尚未接入，当前镜像升级方式见下方 Docker 文档。
 
-Docker 部署及 Linux `x-ui` 管理菜单见 [Docker 部署说明](docs/docker-deployment.md)。部署包面向 Linux amd64，包含官方 3.9.0 和流量监测，镜像与持久数据分开。`x-ui` 支持启停、状态、日志、账号/路径/端口、HTTPS、备份恢复和镜像更新；首次凭证在所部署目录的 `data/state/credentials.json`。WSL 原生开发环境仍按下文管理，凭证位置与 Docker 环境不同。
+Docker 部署及 Linux `x-ui` 管理菜单见 [Docker 部署说明](docs/docker-deployment.md)。部署包包含官方 3.9.0、Xray 和流量监测，镜像与持久数据分开。`x-ui` 支持启停、状态、日志、账号/路径/端口、HTTPS、备份恢复和镜像更新；首次凭证在所部署目录的 `data/state/credentials.json`。
+
+## 监测功能与使用
 
 支持本地域名规则识别（1,411 个服务组、24,541 条域名规则、14 条 Telegram 官方专属网段），可按百度、GitHub、YouTube、Telegram、X、OpenAI、淘宝、抖音等名称搜索。同一客户端访问同一服务的网页、App、接口、媒体域名及端口合并展示。查询和“删除日志与流量”均精确到分钟，包含选择的结束分钟；删除会同步清除该客户端时段内的明细、访问次数及采样用量。使用和规则更新说明见 `docs/targets-and-deletion.md`；完整服务目录为 `apps/traffic-monitor/internal/monitor/rules/service-catalog.json`。
 
@@ -50,41 +65,6 @@ Docker 部署及 Linux `x-ui` 管理菜单见 [Docker 部署说明](docs/docker-
 页面保留 **合计流量**，按所选时间范围显示上传加下载；已按最新需求移除“面板累计”卡片和清零入口。清理使用“删除日志与流量”，选择日期/分钟及一个或所有客户端，预览确认后合计同步减少。**实时在线客户端**另行显示在线状态、上传/下载速度及最近一轮上传/下载量，复用已有采样，不为每条访问估算字节数。
 
 客户端选择框默认只列当前客户端；勾选“显示历史客户端”可查看仍有保留数据的已删除身份。已清空或到期的旧身份自动从选项中消失；“所有客户端”的查询/清理范围仍包含历史客户端。
-
-## 本机打开
-
-在 WSL Ubuntu-24.04 内运行，Windows 浏览器访问：
-
-**http://localhost:18080/panel/?monitor=traffic**
-
-独立页面：**http://localhost:18080/traffic-monitor/**。使用官方面板同一登录会话。
-
-首次创建的随机登录密码保存在 `runtime/lab-state.json`，用户名为 `monitor-admin`。该文件和 `runtime/monitor/api-token` 是本机私有配置，不提交到 Git。首次登录后可以在原面板修改密码；运行验收脚本前需同步本地测试凭证。
-
-PowerShell 启动、停止与状态查看：
-
-```powershell
-wsl -d Ubuntu-24.04 -- bash /mnt/d/work/codexworkspace/x-ui-tab/scripts/start.sh
-wsl -d Ubuntu-24.04 -- bash /mnt/d/work/codexworkspace/x-ui-tab/scripts/stop.sh
-wsl -d Ubuntu-24.04 -- python3 -B /mnt/d/work/codexworkspace/x-ui-tab/scripts/lab.py status
-```
-
-这些脚本仅管理本项目 PID，默认不安装系统服务、不修改 WSL 启动配置。测试客户端以 `monitor-test-` 命名，验收结束后所属入站禁用；页面中留下的记录来自实际本地代理流量。
-
-## 目录与构建
-
-代码在 `apps/traffic-monitor`，前端在其 `web` 子目录。官方包放入 `upstream/3x-ui`，工具链放入 `tools`，运行配置、数据、日志和缓存分别位于 `runtime`、`data`、`runtime/logs`、`cache`，测试结果在 `artifacts`。
-
-所有 WSL 构建和测试先加载项目环境，确保临时文件及缓存不散落到其他目录：
-
-```bash
-cd /mnt/d/work/codexworkspace/x-ui-tab
-source scripts/env.sh
-bash scripts/build.sh
-python3 scripts/lab.py restart --only monitor
-```
-
-从干净目录准备官方包和 Go：运行 `python3 scripts/fetch-upstream.py`，随后用 WSL `tar` 把 `tools/downloads/go1.27.1.linux-amd64.tar.gz` 解压至 `tools`，把 `upstream/3x-ui/v3.9.0/x-ui-linux-amd64.tar.gz` 去除顶层目录解压至 `runtime/panel`。最后执行 `python3 scripts/lab.py init`、构建并启动。发行包和 Go 下载均做 SHA-256 校验。
 
 ## 数据说明
 
@@ -105,4 +85,8 @@ python3 scripts/lab.py restart --only monitor
 
 开发大纲：`docs/development-outline.md`；旧环境清理记录：`docs/environment-check.md`；接口：`docs/api-contract.md`；验收矩阵：`docs/test-matrix.md`。
 
-本机页面采集的是本机 WSL 面板及日志。远程 VLESS 分享链接仅提供代理连接能力，不提供远程面板数据读取权限；查看远程设备的日常历史，需要在对应服务器接入本监测服务。
+监测页面采集的是部署所在服务器的面板和日志。远程 VLESS 分享链接仅提供代理连接能力，不提供远程面板数据读取权限；查看远程设备的日常历史，需要在对应服务器部署或接入本监测服务。
+
+## 本地开发与测试（可选）
+
+需要修改源码、重新构建或运行验收时，参见 [本地开发说明](docs/local-development.md)。该文档记录本项目的 Windows + WSL 开发环境、目录和测试凭证位置；服务器使用上面的 Docker 部署流程即可。
