@@ -95,3 +95,14 @@ v1.0.1 历史公开下载与离线验收已通过；当时单连接在线安装�
 干净 Ubuntu 主机自动安装系统依赖尚未实际验证。WSL 使用已有 Docker/Compose/Python，未修改宿主机 apt 软件源。对网络不能稳定下载 Release 附件的服务器，使用前文的离线部署方式。
 
 当前 `x-ui update` 接受已导入镜像，自动备份、检查启动状态并在失败时恢复；从 GitHub 在线升级及 Actions 自动构建不包含在此次安装入口交付中。
+
+
+## v1.0.2 发布后的真实在线安装复验
+
+2026-10-15 已从 GitHub 公开地址执行本版本安装脚本，完成 7 项流程检查和 4 项 Chromium 检查。此验证没有使用 GitHub 凭证、本地下载模拟或预先放入下载目录的部署包；安装器实际从 GitHub 下载完整的 **180,348,292 字节**附件，验证整包与包内哈希，导入指定镜像并启动新实例。
+
+新凭证登录、匿名访问拒绝、7/35 天保留配置、嵌入/独立页、分钟筛选、删除弹窗、手机布局、刷新及重复安装保护通过；测试容器已经移除。报告为 `artifacts/reports/public-online-install.json`，另有 `docker-bundle-verification.json`（4 项实际解压包检查）和 `online-install-docker.json`（4 项下载夹具与实际 Docker 安装检查）。三种测试分别记录，不混用结果。
+
+本地网络仍无法直连 raw.githubusercontent.com；成功的完整流程使用文档中的 GitHub 官方 API 脚本入口。附件下载同样走 GitHub 官方 API/CDN。干净系统的 apt/Docker 依赖安装、真实 VPS 和其他 Linux 发行版仍未实机验证。
+
+正式附件 SHA-256：`f6bdcdbba7dfd8893bf991a2208a6c9e16180291ea10f31450e841e5f9332eab`。对应功能发布提交为 `2773f5574e3b0315b579ae8ca0c2f62431fbd73a`，v1.0.2 标签和附件保持不变；本节作为发布后验证记录补充到主分支。

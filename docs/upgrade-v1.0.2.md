@@ -65,3 +65,14 @@ sudo /opt/x-ui-tab/x-ui restore /opt/x-ui-tab/backups/实际升级前备份.tar.
 交付 Linux amd64 Docker 包；支持使用既有 Docker Engine、Compose v2 和 Python 3.10+ 的 Linux 服务器。此次实际验证环境为 WSL Ubuntu 24.04，未在真实 VPS、CentOS 或全新 Ubuntu 上执行依赖安装。新增 MASQUE、XDRIVE、TUN、外部节点和机器人不属于本次验收范围。
 
 资源测量见 [资源说明](resource-assessment.md)。月流量 300 GB 不等于瞬时峰值；35 天容量仍主要由连接条数决定。Windows Defender 对旧版完整源码归档的隔离记录保留，未恢复文件、关闭防护或添加排除项；此次校验的官方 Linux 包哈希为 `bfda7921984e7a72555c38d4e861c7a8b67b3686b658608937de99682f1452d0`。
+
+
+## v1.0.2 发布后的真实在线安装复验
+
+2026-10-15 已从 GitHub 公开地址执行本版本安装脚本，完成 7 项流程检查和 4 项 Chromium 检查。此验证没有使用 GitHub 凭证、本地下载模拟或预先放入下载目录的部署包；安装器实际从 GitHub 下载完整的 **180,348,292 字节**附件，验证整包与包内哈希，导入指定镜像并启动新实例。
+
+新凭证登录、匿名访问拒绝、7/35 天保留配置、嵌入/独立页、分钟筛选、删除弹窗、手机布局、刷新及重复安装保护通过；测试容器已经移除。报告为 `artifacts/reports/public-online-install.json`，另有 `docker-bundle-verification.json`（4 项实际解压包检查）和 `online-install-docker.json`（4 项下载夹具与实际 Docker 安装检查）。三种测试分别记录，不混用结果。
+
+本地网络仍无法直连 raw.githubusercontent.com；成功的完整流程使用文档中的 GitHub 官方 API 脚本入口。附件下载同样走 GitHub 官方 API/CDN。干净系统的 apt/Docker 依赖安装、真实 VPS 和其他 Linux 发行版仍未实机验证。
+
+正式附件 SHA-256：`f6bdcdbba7dfd8893bf991a2208a6c9e16180291ea10f31450e841e5f9332eab`。对应功能发布提交为 `2773f5574e3b0315b579ae8ca0c2f62431fbd73a`，v1.0.2 标签和附件保持不变；本节作为发布后验证记录补充到主分支。
