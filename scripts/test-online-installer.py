@@ -17,8 +17,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'scripts/install-online.sh'
 CODE = SCRIPT.read_text().split("<<'PY'\n", 1)[1].split('\nPY\n', 1)[0]
-REPO, VERSION = 'eatfatno/x-ui-tab', 'v1.0.1'
-NAME = 'x-ui-tab-3.9.0-1.0.1-linux-amd64'
+REPO, VERSION = 'eatfatno/x-ui-tab', 'v1.0.2'
+NAME = 'x-ui-tab-3.10.2-1.0.2-linux-amd64'
 
 
 def digest(data):
@@ -26,9 +26,11 @@ def digest(data):
 
 
 class Response(io.BytesIO):
-    def __init__(self, data, url):
+    def __init__(self, data, url, status=200, headers=None):
         super().__init__(data)
         self.url = url
+        self.status = status
+        self.headers = headers or {}
 
 
 class InstallerTests(unittest.TestCase):
@@ -42,7 +44,7 @@ class InstallerTests(unittest.TestCase):
             'compose.yaml': b'services: {}\n',
             'image.tar.gz': b'fixture-image',
         }
-        self.manifest = {'architecture': 'amd64', 'monitor_version': '1.0.1',
+        self.manifest = {'architecture': 'amd64', 'monitor_version': '1.0.2',
                          'image_archive_sha256': digest(self.files['image.tar.gz'])}
         self.release = {'tag_name': VERSION, 'draft': False, 'prerelease': False,
                         'assets': [{'name': NAME + '.tar.gz'}, {'name': NAME + '.tar.gz.sha256'}]}
@@ -50,6 +52,10 @@ class InstallerTests(unittest.TestCase):
         self.archive_extra = None
         self.wrong_archive_hash = False
         self.inventory_missing = False
+        self.wrong_range = False
+        self.truncate_once = False
+        self.range_calls = 0
+        self.wrong_host = False
 
     def tearDown(self):
         self.temp.cleanup()
@@ -72,14 +78,28 @@ class InstallerTests(unittest.TestCase):
 
     def install(self):
         archive, checksum = self.assets()
+        prefix = f'https://api.github.com/repos/{REPO}/releases/assets/'
+        self.release['assets'] = [{'name': NAME + '.tar.gz', 'url': prefix + '1', 'size': len(archive)},
+                                  {'name': NAME + '.tar.gz.sha256', 'url': prefix + '2', 'size': len(checksum)}]
+        signed = 'https://release-assets.githubusercontent.com/fixture'
 
         def response(request, timeout):
             url = request.full_url
             self.requests.append(url)
+            if url == prefix + '1' and request.get_method() == 'HEAD':
+                return Response(b'', 'https://example.invalid/fixture' if self.wrong_host else signed)
+            if url == signed:
+                start, end = map(int, request.get_header('Range').removeprefix('bytes=').split('-'))
+                self.range_calls += 1
+                data = archive[start:end + 1]
+                if self.truncate_once and start == 0:
+                    self.truncate_once = False
+                    data = data[:-1]
+                return Response(data, signed, 206, {'Content-Range': 'invalid' if self.wrong_range else f'bytes {start}-{end}/{len(archive)}'})
             urls = {
                 f'https://api.github.com/repos/{REPO}/releases/tags/{VERSION}': json.dumps(self.release).encode(),
-                f'https://github.com/{REPO}/releases/download/{VERSION}/{NAME}.tar.gz': archive,
-                f'https://github.com/{REPO}/releases/download/{VERSION}/{NAME}.tar.gz.sha256': checksum,
+                prefix + '1': archive,
+                prefix + '2': checksum,
             }
             if url not in urls:
                 raise AssertionError('Unexpected network request')
@@ -97,6 +117,30 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse(list((self.target / '.cache/online-install').iterdir()))
         self.install()
         self.assertTrue(os.access(self.target / 'x-ui', os.X_OK))
+
+    def large_image(self):
+        self.files['image.tar.gz'] = os.urandom(2 * 1024**2 + 500)
+        self.manifest['image_archive_sha256'] = digest(self.files['image.tar.gz'])
+
+    def test_range_download_retries_incomplete_part_and_verifies_full_archive(self):
+        self.large_image()
+        self.truncate_once = True
+        self.install()
+        self.assertGreaterEqual(self.range_calls, 4)
+        self.assertEqual((self.target / 'image.tar.gz').read_bytes(), self.files['image.tar.gz'])
+
+    def test_rejects_wrong_range(self):
+        self.large_image()
+        self.wrong_range = True
+        with self.assertRaisesRegex(ValueError, 'byte range'):
+            self.install()
+        self.assertFalse((self.target / 'x-ui').exists())
+
+    def test_rejects_unexpected_download_host(self):
+        self.large_image()
+        self.wrong_host = True
+        with self.assertRaisesRegex(ValueError, 'download host'):
+            self.install()
 
     def test_rejects_checksum_mismatch_before_install(self):
         self.wrong_archive_hash = True
@@ -133,7 +177,7 @@ class InstallerTests(unittest.TestCase):
             self.install()
 
     def test_rejects_wrong_version(self):
-        self.manifest['monitor_version'] = '1.0.2'
+        self.manifest['monitor_version'] = '9.9.9'
         with self.assertRaisesRegex(ValueError, 'architecture or version'):
             self.install()
 

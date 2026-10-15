@@ -140,10 +140,10 @@ def init():
     tokenfile.chmod(0o600)
     write_private(STATE, {'username': username, 'password': password, 'base_path': base_path,
                            'upstream': 'http://127.0.0.1:12053', 'public_url': 'http://localhost:18080',
-                           'panel_version': '3.9.0'})
+                           'panel_version': '3.10.2'})
     write_private(MONITOR / 'config.json', {
         'listen': '127.0.0.1:18080', 'upstream': 'http://127.0.0.1:12053', 'web_base_path': base_path,
-        'panel_version': '3.9.0', 'api_token_file': str(tokenfile),
+        'panel_version': '3.10.2', 'api_token_file': str(tokenfile),
         'db_path': str(ROOT / 'data/monitor/monitor.db'), 'access_log_path': str(LOGS / 'xray-access.log'),
         'web_dir': str(MONITOR / 'www'), 'timezone': 'Asia/Shanghai',
         'sample_interval_seconds': 10, 'detail_days': 7, 'summary_days': 35,

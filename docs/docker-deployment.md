@@ -1,6 +1,6 @@
 # Docker 部署与 Linux x-ui 管理
 
-此部署包包含官方 3x-ui v3.9.0、Xray、独立 Go 流量监测服务及 React 页面，通过 **Docker Engine + Compose v2 直接部署到 Linux 服务器**，不需要 Windows 或 WSL。目标平台为 **Linux x86_64 / amd64**，当前未交付 ARM 镜像。
+此部署包包含官方 3x-ui v3.10.2、Xray、独立 Go 流量监测服务及 React 页面，通过 **Docker Engine + Compose v2 直接部署到 Linux 服务器**，不需要 Windows 或 WSL。目标平台为 **Linux x86_64 / amd64**，当前未交付 ARM 镜像。
 
 ## 系统环境与依赖
 
@@ -17,12 +17,12 @@ CentOS Stream 等宿主机若启用了 SELinux 容器访问控制，需要为专
 
 已发布版本可直接使用 [GitHub 一键安装命令](github-publishing.md#3-服务器安装)。下列步骤适用于手工传输部署包的离线安装；两种方式部署相同镜像，使用相同管理命令。
 
-把 `artifacts/docker/x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz` 和旁边的 `.sha256` 文件复制到服务器。压缩包不含开发机的数据库、账号密码、代理链接或访问历史。
+把 `artifacts/docker/x-ui-tab-3.10.2-1.0.2-linux-amd64.tar.gz` 和旁边的 `.sha256` 文件复制到服务器。压缩包不含开发机的数据库、账号密码、代理链接或访问历史。
 
 ```bash
-sha256sum -c x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz.sha256
-tar -xzf x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz
-cd x-ui-tab-3.9.0-1.0.1-linux-amd64
+sha256sum -c x-ui-tab-3.10.2-1.0.2-linux-amd64.tar.gz.sha256
+tar -xzf x-ui-tab-3.10.2-1.0.2-linux-amd64.tar.gz
+cd x-ui-tab-3.10.2-1.0.2-linux-amd64
 sha256sum -c SHA256SUMS
 sudo bash install.sh
 sudo x-ui load
@@ -122,7 +122,7 @@ Linux 使用 `network_mode: host`，新建 Xray 入站端口可以直接生效�
 ```bash
 sudo x-ui backup
 sudo x-ui load /path/to/new-bundle/image.tar.gz
-sudo x-ui update x-ui-tab:3.9.0-1.0.2-amd64  # 示例；填写实际已构建导入的版本
+sudo x-ui update x-ui-tab:3.10.2-1.0.2-amd64  # 示例；填写实际已构建导入的版本
 sudo x-ui restore /absolute/path/to/backups/x-ui-....tar.gz --yes
 ```
 

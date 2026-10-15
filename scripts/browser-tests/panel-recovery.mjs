@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 const root=path.resolve(import.meta.dirname,'../..');
-const state=JSON.parse(await fs.readFile(path.join(root,'runtime/lab-state.json'),'utf8'));
+const state=JSON.parse(await fs.readFile(process.env.PANEL_STATE_FILE || path.join(root,'runtime/lab-state.json'),'utf8'));
 const base=new URL(state.base_path,state.public_url).href;
 const baseline=process.env.RECOVERY_BASELINE==='1';
 const report={passed:false,baseline,checks:[],expectedFailures:[]};

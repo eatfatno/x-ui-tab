@@ -1,5 +1,7 @@
 # Docker 打包进度与暂停记录
 
+2026-10-15 更新：当前升级交付为 v1.0.2 / 官方 3.10.2，实施与验收见 [升级说明](upgrade-v1.0.2.md)。下文 v1.0.1 及更早的暂停、发布过程作为历史保留。
+
 ## 当前交付版本
 
 正式交付为 [v1.0.1](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1)，本地文件 `artifacts/docker/x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz`。1.0.1 修复首次初始化竞态。下文 1.0.0 及暂停信息是历史记录，最新发布状态见 `github-publishing-progress.md`。

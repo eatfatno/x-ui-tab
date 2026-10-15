@@ -33,7 +33,7 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
-	return Config{Listen: "127.0.0.1:18080", Upstream: "http://127.0.0.1:12053", WebBasePath: "/", PanelVersion: "3.9.0", Timezone: "Asia/Shanghai", SampleIntervalSeconds: 10, DetailDays: 7, SummaryDays: 35, LogMaxBytes: 64 << 20, InstanceID: "local"}
+	return Config{Listen: "127.0.0.1:18080", Upstream: "http://127.0.0.1:12053", WebBasePath: "/", PanelVersion: "3.10.2", Timezone: "Asia/Shanghai", SampleIntervalSeconds: 10, DetailDays: 7, SummaryDays: 35, LogMaxBytes: 64 << 20, InstanceID: "local"}
 }
 
 func LoadConfig(path string) (Config, error) {

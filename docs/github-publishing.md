@@ -2,7 +2,7 @@
 
 仓库网页：https://github.com/eatfatno/x-ui-tab 。Git 远程地址：https://github.com/eatfatno/x-ui-tab.git 。两者指向同一个仓库。
 
-源码和正式 [Release v1.0.1](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1) 已于 2026-10-12 发布，两个附件已上传并通过 GitHub SHA-256 核对。安装用户直接使用第 3 节；第 1、2 节保留为维护者发布流程，不需要重复创建已有版本或移动标签。
+源码和正式 [Release v1.0.2](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.2) 于 2026-10-15 更新，两个附件已上传并通过 GitHub SHA-256 核对。安装用户直接使用第 3 节；第 1、2 节保留为维护者发布流程，不需要重复创建已有版本或移动标签。
 
 ## 1. 上传整理好的源码
 
@@ -36,19 +36,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1
 ## 2. 发布成品安装包
 
 1. 打开仓库的 **Releases**，点击 **Create a new release**，或直接进入 https://github.com/eatfatno/x-ui-tab/releases/new 。
-2. 在 **Choose a tag** 中输入 `v1.0.1`，选择创建新标签；**Target** 选 `main`。标签应指向包含在线安装脚本的源码提交。
-3. 标题填写 `v1.0.1 · 3x-ui 3.9.0 + 流量监测`。
-4. 说明内容使用 `docs/releases/v1.0.1.md`。
+2. 在 **Choose a tag** 中输入 `v1.0.2`，选择创建新标签；**Target** 选 `main`。标签应指向包含在线安装脚本的源码提交。
+3. 标题填写 `v1.0.2 · 3x-ui 3.10.2 + 流量监测`。
+4. 说明内容使用 `docs/releases/v1.0.2.md`。
 5. 上传下列两个附件（不要改文件名）：
 
    ```text
-   artifacts/docker/x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz
-   artifacts/docker/x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz.sha256
+   artifacts/docker/x-ui-tab-3.10.2-1.0.2-linux-amd64.tar.gz
+   artifacts/docker/x-ui-tab-3.10.2-1.0.2-linux-amd64.tar.gz.sha256
    ```
 
 6. 保持正式版本，**不勾选 pre-release**，点击 **Publish release**。仅保存草稿不能供公开安装脚本下载。
 
-源码与发布包分别来自同一项目。在线安装器及发布操作工具位于源码仓库；v1.0.1 Docker 包修复了慢磁盘首次启动时，健康检查提前创建空数据库的问题；面板和监测功能沿用已经验证的实现。GitHub 首次发布使用修复后的 1.0.1。
+源码与发布包来自同一项目。v1.0.2 升级到官方 3x-ui 3.10.2 / Xray 26.10.10，保留前版首次初始化竞态修复，增加新版本适配、跨版本数据库恢复验收及官方 API 分段下载。旧 v1.0.1 标签和附件保留。
 
 ## 3. 服务器安装
 
@@ -57,22 +57,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1
 Ubuntu 22.04/24.04 服务器执行，脚本可安装缺少的依赖：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1
+curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.2/scripts/install-online.sh | sudo bash -s -- --version v1.0.2
 ```
 
 CentOS Stream 等其他发行版先准备 Docker、Compose v2、Python 3.10+ 等依赖，以及适用的 SELinux 数据目录配置，再执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1 --no-install-deps
+curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.2/scripts/install-online.sh | sudo bash -s -- --version v1.0.2 --no-install-deps
 ```
 
 若 `raw.githubusercontent.com` 连接被重置或超时，可使用 GitHub 官方 API 的原始文件响应：
 
 ```bash
-curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.1' | sudo bash -s -- --version v1.0.1
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.2' | sudo bash -s -- --version v1.0.2
 ```
 
-两个入口都固定为 `v1.0.1`，脚本内容相同，不经过第三方镜像，不需要 GitHub 凭证。其他发行版使用 API 入口时也加 `--no-install-deps`。备用入口仍需要访问 GitHub API 和 Release 附件 CDN。如果 `curl` 尚未安装，Ubuntu 先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
+两个入口都固定为 `v1.0.2`，脚本内容相同，不经过第三方镜像，不需要 GitHub 凭证。其他发行版使用 API 入口时也加 `--no-install-deps`。备用入口仍需要访问 GitHub API 和 Release 附件 CDN。如果 `curl` 尚未安装，Ubuntu 先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
 
 默认目录 `/opt/x-ui-tab`，首次账号密码文件 `/opt/x-ui-tab/data/state/credentials.json`。使用 `sudo x-ui` 管理；原来已有其他 x-ui 时使用 `sudo x-ui-tab`，完整路径 `/opt/x-ui-tab/x-ui` 始终可用。Web 密码修改后请以实际设置为准。
 
@@ -86,11 +86,11 @@ curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/
 
 `scripts/test-online-installer.py` 检查哈希不符、异常归档、路径越界、链接、版本/架构不符及已有文件保护。`scripts/verify-online-install.py` 使用本地 GitHub 下载模拟和实际 Docker 包，完成真实解压、导入、启动、登录及重复安装保护；所有测试目录与 Docker 存储均在本项目内。
 
-2026-10-15 已完成真实公开下载与 WSL 安装验证。通过 GitHub 官方 API 取得标签中的脚本，并从 GitHub Release 附件 CDN 下载完整的 177,133,451 字节部署包，SHA-256 与 GitHub digest 和校验文件一致；这次没有模拟下载或使用 GitHub 凭证。
+v1.0.2 使用 GitHub 官方资产 API 取得 HTTPS 附件地址，大包以 8 个并发请求、每段 1 MiB 下载；每段验证 Content-Range 和长度，网络中断最多尝试 3 次，全部下载后再检查整包及包内 SHA-256。下载暂存目录位于部署目录，成功或失败后清理。不需要 GitHub 登录，也不经过第三方下载镜像。
 
-当前网络直连 `raw.githubusercontent.com` 被重置。使用 API 入口的单连接在线安装测试在 600 秒内未下载完大文件，因此该次在线完整流程没有通过。随后采用 HTTPS 分段下载完整官方包，再在项目专用 Docker daemon 中离线安装；7 项检查和 4 项 Chromium 浏览器检查通过，包括新凭证登录、登录边界、嵌入页、分钟筛选、删除弹窗、手机布局、刷新、独立页和已有数据保护。测试容器随后移除。
+安装边界测试新增不完整分段重试、错误 Content-Range 和异常下载主机检查，共 17 项。真实发布后的在线安装报告保存在 `artifacts/reports/public-online-install.json`；命令 `scripts/verify-public-install.py` 检查公开脚本、Release、实际安装、登录、浏览器和重复安装保护。支持用 `--offline-bundle` 单独验证离线流程，两者独立记录，不相互替代。
 
-证据保存在本地 `artifacts/reports/public-release-download.json`、`public-bundle-install.json` 和 `public-online-install.json`。可用 `scripts/verify-public-install.py` 重现单连接在线验证，或传入 `--offline-bundle <已下载包的项目内路径>` 重现公开包安装检查；后者会重新核对 GitHub digest、整包和包内文件哈希。两个模式分别记录报告，避免把离线安装算成在线流程通过。
+v1.0.1 历史公开下载与离线验收已通过；当时单连接在线安装在 600 秒内未完成。该历史失败是此次下载改进的依据。新版的测试结果和升级步骤见 [v1.0.2 升级说明](upgrade-v1.0.2.md)。
 
 干净 Ubuntu 主机自动安装系统依赖尚未实际验证。WSL 使用已有 Docker/Compose/Python，未修改宿主机 apt 软件源。对网络不能稳定下载 Release 附件的服务器，使用前文的离线部署方式。
 

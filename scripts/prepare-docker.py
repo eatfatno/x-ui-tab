@@ -27,8 +27,8 @@ def fetch(url, path):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument('--panel-version', default='3.9.0')
-    p.add_argument('--monitor-version', default='1.0.1')
+    p.add_argument('--panel-version', default='3.10.2')
+    p.add_argument('--monitor-version', default='1.0.2')
     args = p.parse_args()
     for v in (args.panel_version, args.monitor_version):
         if not re.fullmatch(r'\d+\.\d+\.\d+', v):

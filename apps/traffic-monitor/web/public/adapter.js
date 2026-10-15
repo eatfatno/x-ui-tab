@@ -1,4 +1,4 @@
-/* 3x-ui 3.9 layout adapter. The official application remains unmodified. */
+/* Verified 3x-ui 3.9.x and 3.10.2 layouts. The official application remains unmodified. */
 (() => {
   'use strict';
   if (window.__trafficMonitorAdapter) return;
@@ -40,7 +40,8 @@
     return location.pathname.replace(/\/$/, '') === panelPath.replace(/\/$/, '') && new URLSearchParams(location.search).get('monitor') === 'traffic';
   }
   function supported() {
-    return /^v?3\.9\.\d+$/.test(String(window.X_UI_CUR_VER || ''));
+    const version = String(window.X_UI_CUR_VER || '');
+    return /^v?3\.9\.\d+$/.test(version) || /^v?3\.10\.2$/.test(version);
   }
   function sendTheme(force) {
     if (!frame || !frame.contentWindow) return;

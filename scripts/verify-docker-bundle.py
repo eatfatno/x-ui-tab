@@ -10,7 +10,7 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[1]
-NAME = 'x-ui-tab-3.9.0-1.0.1-linux-amd64'
+NAME = 'x-ui-tab-3.10.2-1.0.2-linux-amd64'
 archive = ROOT / 'artifacts/docker' / (NAME + '.tar.gz')
 destination = ROOT / 'artifacts/fixtures/docker-bundle-install'
 report = {'passed': False, 'checks': []}

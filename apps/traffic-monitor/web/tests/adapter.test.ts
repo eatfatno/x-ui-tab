@@ -18,8 +18,8 @@ function setup(version = '3.9.0', selected = true, shape = true) {
 }
 
 describe('verified official layout integration', () => {
-  it('adds one menu, preserves header, and embeds under the actual secret base', () => {
-    const window = setup();
+  it.each(['3.9.0', '3.10.2', 'v3.10.2'])('integrates verified version %s under the actual secret base', (version) => {
+    const window = setup(version);
     expect(window.document.querySelectorAll('.tm-menu-item')).toHaveLength(1);
     expect(window.document.querySelector('.ov-bar')?.textContent).toBe('Original header');
     expect(window.document.querySelector<HTMLIFrameElement>('#traffic-monitor-frame')?.src).toBe('https://panel.test/secret/traffic-monitor/');
@@ -27,8 +27,8 @@ describe('verified official layout integration', () => {
     window.eval(script);
     expect(window.document.querySelectorAll('#traffic-monitor-frame')).toHaveLength(1);
   });
-  it('does not hide the panel or create an iframe on unverified versions', () => {
-    const window = setup('4.0.0');
+  it.each(['3.10.0', '3.10.3', '3.11.0', '4.0.0'])('leaves unverified version %s visible', (version) => {
+    const window = setup(version);
     expect(window.document.querySelector('#traffic-monitor-frame')).toBeNull();
     expect(window.document.body.classList.contains('tm-active')).toBe(false);
     expect(window.document.querySelector<HTMLAnchorElement>('#traffic-monitor-fallback')?.href).toBe('https://panel.test/secret/traffic-monitor/');

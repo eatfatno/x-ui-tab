@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
-panel_version="${PANEL_VERSION:-3.9.0}"
-monitor_version="${MONITOR_VERSION:-1.0.1}"
+panel_version="${PANEL_VERSION:-3.10.2}"
+monitor_version="${MONITOR_VERSION:-1.0.2}"
 image="x-ui-tab:$panel_version-$monitor_version-amd64"
 export DOCKER_CONFIG="$PROJECT_ROOT/cache/docker-client"
 mkdir -p "$DOCKER_CONFIG" "$PROJECT_ROOT/artifacts/build/docker"

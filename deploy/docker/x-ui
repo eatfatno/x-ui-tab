@@ -29,7 +29,7 @@ os.environ['PYTHONDONTWRITEBYTECODE'] = '1'
 os.environ['DOCKER_CONFIG'] = str(CACHE / 'docker')
 (CACHE / 'docker').mkdir(exist_ok=True)
 DEFAULT_IMAGE = (json.loads((ROOT / 'bundle.json').read_text())['image']
-                 if (ROOT / 'bundle.json').is_file() else 'x-ui-tab:3.9.0-1.0.1-amd64')
+                 if (ROOT / 'bundle.json').is_file() else 'x-ui-tab:3.10.2-1.0.2-amd64')
 
 
 def run(args, capture=False, data=None, check=True):

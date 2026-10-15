@@ -15,7 +15,7 @@ import sys
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-NAME = 'x-ui-tab-3.9.0-1.0.1-linux-amd64'
+NAME = 'x-ui-tab-3.10.2-1.0.2-linux-amd64'
 BASE = ROOT / 'artifacts/fixtures' / ('online-install-' + uuid.uuid4().hex[:8])
 STACK = BASE / 'deployment'
 REPORT = ROOT / 'artifacts/reports/online-install-docker.json'
@@ -31,10 +31,12 @@ def main():
     bridge = BASE / 'download-fixture'
     bridge.mkdir()
     archive = ROOT / 'artifacts/docker' / (NAME + '.tar.gz')
-    metadata = {'tag_name': 'v1.0.1', 'draft': False, 'prerelease': False,
-                'assets': [{'name': NAME + '.tar.gz'}, {'name': NAME + '.tar.gz.sha256'}]}
+    metadata = {'tag_name': 'v1.0.2', 'draft': False, 'prerelease': False,
+                'assets': [{'name': NAME + '.tar.gz', 'url': 'https://api.github.com/repos/eatfatno/x-ui-tab/releases/assets/1', 'size': archive.stat().st_size},
+                           {'name': NAME + '.tar.gz.sha256', 'url': 'https://api.github.com/repos/eatfatno/x-ui-tab/releases/assets/2', 'size': Path(str(archive) + '.sha256').stat().st_size}]}
     (bridge / 'release.json').write_text(json.dumps(metadata))
     (bridge / 'sitecustomize.py').write_text('''import os
+import io
 from pathlib import Path
 import urllib.request
 _original = urllib.request.urlopen
@@ -43,10 +45,21 @@ def _fixture(request, *args, **kwargs):
     name = os.environ['INSTALL_TEST_NAME']
     base = Path(os.environ['INSTALL_TEST_ROOT'])
     paths = {
-        'https://api.github.com/repos/eatfatno/x-ui-tab/releases/tags/v1.0.1': base / 'release.json',
-        'https://github.com/eatfatno/x-ui-tab/releases/download/v1.0.1/' + name + '.tar.gz': Path(os.environ['INSTALL_TEST_ARCHIVE']),
-        'https://github.com/eatfatno/x-ui-tab/releases/download/v1.0.1/' + name + '.tar.gz.sha256': Path(os.environ['INSTALL_TEST_ARCHIVE'] + '.sha256'),
+        'https://api.github.com/repos/eatfatno/x-ui-tab/releases/tags/v1.0.2': base / 'release.json',
+        'https://api.github.com/repos/eatfatno/x-ui-tab/releases/assets/1': Path(os.environ['INSTALL_TEST_ARCHIVE']),
+        'https://api.github.com/repos/eatfatno/x-ui-tab/releases/assets/2': Path(os.environ['INSTALL_TEST_ARCHIVE'] + '.sha256'),
     }
+    signed = 'https://release-assets.githubusercontent.com/test-fixture'
+    if request.get_method() == 'HEAD':
+        f = io.BytesIO(b''); f.url = signed; return f
+    if url == signed:
+        start, end = map(int, request.get_header('Range').removeprefix('bytes=').split('-'))
+        archive = Path(os.environ['INSTALL_TEST_ARCHIVE'])
+        with archive.open('rb') as source:
+            source.seek(start); data = source.read(end - start + 1)
+        f = io.BytesIO(data); f.url = signed; f.status = 206
+        f.headers = {'Content-Range': f'bytes {start}-{end}/{archive.stat().st_size}'}
+        return f
     if url in paths:
         f = paths[url].open('rb')
         f.url = url

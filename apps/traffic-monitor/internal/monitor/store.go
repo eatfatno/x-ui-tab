@@ -623,5 +623,6 @@ func (s *Store) RecordIssue(now time.Time, code string) error {
 	return s.tx(func(tx *sql.Tx) error { return quality(tx, now, now, "", code) })
 }
 func compatible(version string) bool {
-	return strings.HasPrefix(strings.TrimPrefix(version, "v"), "3.9.")
+	version = strings.TrimPrefix(version, "v")
+	return strings.HasPrefix(version, "3.9.") || version == "3.10.2"
 }

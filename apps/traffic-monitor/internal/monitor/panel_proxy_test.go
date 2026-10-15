@@ -13,6 +13,33 @@ import (
 	"time"
 )
 
+func TestPanelVersionIntegration(t *testing.T) {
+	for _, version := range []string{"3.9.0", "3.10.2", "v3.10.2", "3.10.3", "4.0.0"} {
+		t.Run(version, func(t *testing.T) {
+			s, cfg := testStore(t, time.Now())
+			up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html")
+				w.Header().Set("Content-Security-Policy", "script-src 'self' 'nonce-kept'")
+				fmt.Fprintf(w, `<html><head><script nonce="kept">window.X_UI_CUR_VER="%s";</script></head><body>Official panel</body></html>`, version)
+			}))
+			defer up.Close()
+			cfg.Upstream = up.URL
+			col := NewCollector(cfg, s)
+			server := NewServer(cfg, s, col)
+			w := httptest.NewRecorder()
+			server.ServeHTTP(w, httptest.NewRequest("GET", "/panel/", nil))
+			want := version == "3.9.0" || version == "3.10.2" || version == "v3.10.2"
+			body := w.Body.String()
+			if w.Code != http.StatusOK || col.Version() != version || strings.Contains(body, "/adapter.js") != want {
+				t.Fatalf("version %s: status=%d detected=%s body=%s", version, w.Code, col.Version(), body)
+			}
+			if !strings.Contains(body, "Official panel") || !strings.Contains(body, "panel-recovery.js") || !strings.Contains(w.Header().Get("Content-Security-Policy"), "nonce-kept") {
+				t.Fatal("version handling changed the official document or its security policy")
+			}
+		})
+	}
+}
+
 func TestPanelModuleRetryIsBoundedAndReadOnly(t *testing.T) {
 	for _, tc := range []struct {
 		method, path           string

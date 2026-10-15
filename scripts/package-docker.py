@@ -30,7 +30,7 @@ def main():
         (bundle / entry).chmod(0o755)
     docs = bundle / 'docs'
     docs.mkdir(exist_ok=True)
-    for entry in ('docker-deployment.md', 'resource-assessment.md', 'targets-and-deletion.md', 'test-matrix.md', 'github-publishing.md'):
+    for entry in ('docker-deployment.md', 'local-development.md', 'resource-assessment.md', 'targets-and-deletion.md', 'test-matrix.md', 'github-publishing.md', 'upgrade-v1.0.2.md'):
         if (ROOT / 'docs' / entry).exists():
             shutil.copy2(ROOT / 'docs' / entry, docs / entry)
     shutil.copytree(ROOT / 'artifacts/docker/context/licenses', bundle / 'licenses', dirs_exist_ok=True)
@@ -38,7 +38,7 @@ def main():
     shutil.copy2(ROOT / 'THIRD_PARTY_NOTICES.md', bundle / 'licenses/THIRD_PARTY_NOTICES.md')
     reports = bundle / 'reports'
     reports.mkdir(exist_ok=True)
-    for report_name in ('docker-acceptance.json', 'docker-official-browser.json', 'docker-monitor-browser.json', 'docker-checkpoint-tests.txt', 'docker-backend-vet.txt', 'online-installer-tests.txt', 'docker-initialization-tests.txt'):
+    for report_name in ('docker-acceptance.json', 'docker-official-browser.json', 'docker-monitor-browser.json', 'panel-recovery-browser.json', 'docker-checkpoint-tests.txt', 'docker-backend-vet.txt', 'online-installer-tests.txt', 'docker-initialization-tests.txt', 'docker-version-upgrade.json', 'upgrade102-go-tests.txt', 'upgrade102-frontend-tests.txt', 'resource-reality-5clients.json', 'runtime-checks.json'):
         source_report = ROOT / 'artifacts/reports' / report_name
         if source_report.exists():
             shutil.copy2(source_report, reports / report_name)

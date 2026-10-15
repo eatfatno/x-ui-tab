@@ -4,7 +4,7 @@ source "$(dirname "$0")/env.sh"
 cd "$PROJECT_ROOT/apps/traffic-monitor/web"
 npm ci --no-audit --no-fund
 npm run build
-mkdir -p "$PROJECT_ROOT/runtime/monitor/www"
+mkdir -p "$PROJECT_ROOT/runtime/monitor/www" "$PROJECT_ROOT/artifacts/build"
 cp -a dist/. "$PROJECT_ROOT/runtime/monitor/www/"
 cd "$PROJECT_ROOT/apps/traffic-monitor"
 go build -trimpath -o "$PROJECT_ROOT/artifacts/build/traffic-monitor" ./cmd/monitor

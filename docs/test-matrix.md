@@ -249,3 +249,24 @@ REALITY 含后量子参数时，官方 3.9.0 的 `ClientQrModal` 通过 `isPostQ
 | 清理与隔离 | 测试容器移除，数据和日志只留在项目夹具内；未操作用户现有 WSL 服务、OpenCode 或默认 Docker daemon |
 
 这里验证的是“真实公开下载后安装”；不把分段下载后的离线安装称为单连接一键流程通过。干净系统的 apt 依赖安装和未指定的实际 VPS 部署仍未执行。
+
+
+## 2026-10-15 v1.0.2 / 官方 3.10.2 回归
+
+| 验证范围 | 当前结果与证据 |
+| --- | --- |
+| Go 后端与版本代理 | `go test ./...`、`go vet ./...` 通过；已知版本注入、未知版本独立页保护、原始内容与 CSP 保留 |
+| 前端 | 15 项 Vitest 通过，TypeScript 与生产构建通过 |
+| 安装器及恢复边界 | 17 项安装器测试、1 项首次初始化竞态、3 项检查点恢复测试通过 |
+| 新版原生开发实例 | 登录、权限、查询、保留期、SQLite 并发及崩溃恢复，10 项通过 |
+| Docker 功能 | 14 项通过：两客户端 REALITY、实际日志轮转、分钟删除、Token/账号/路径/端口、TLS、备份恢复、更新失败恢复和菜单 |
+| 官方浏览器 | 18 项通过，访问 107 个不同静态资源；普通 VLESS/REALITY 二维码及各侧栏页面正常，无未预期 JS/HTTP 错误 |
+| 动态模块故障注入 | 2 项通过：中断二维码模块后显示恢复入口，重新加载后弹窗恢复 |
+| 监测浏览器 | 4 项通过：嵌入、汇总、分钟筛选、实时区、删除预览、手机/深色、刷新、独立页和登录边界 |
+| 新版内核资源 | 5 客户端两档持续下载通过，测量范围和原 35 天容量口径见资源说明 |
+
+原始报告：`upgrade102-go-tests.txt`、`upgrade102-frontend-tests.txt`、`online-installer-tests.txt`、`docker-initialization-tests.txt`、`docker-checkpoint-tests.txt`、`runtime-checks.json`、`docker-acceptance.json`、`docker-official-browser.json`、`panel-recovery-browser.json`、`docker-monitor-browser.json`。旧版报告保存在 `artifacts/reports/v1.0.1-pre-upgrade/`。
+
+轮转测试本轮修正了测试条件：原先通过已有日志大小触发，对空闲环境不适用；新测试在一次真实 REALITY 访问后调整隔离测试库的轮转时间，等待实际一分钟清理周期，再发送另一客户端的请求。确认实际 Xray LoggerService 创建新日志，前后共 4 条访问准确归属、不重复。
+
+跨版本迁移与公开安装以 [升级说明](upgrade-v1.0.2.md) 中的最终结果为准。未测试新协议 MASQUE/XDRIVE/TUN、外部服务、真实 VPS 或全新操作系统依赖安装。

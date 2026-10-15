@@ -4,7 +4,7 @@ x-ui-tab 基于 [MHSanaei/3x-ui](https://github.com/MHSanaei/3x-ui) 进行功能
 
 - **上游原项目**：[3x-ui](https://github.com/MHSanaei/3x-ui)，由 [MHSanaei](https://github.com/MHSanaei) 及其贡献者维护。原面板和代理管理功能来自该项目，相关版权归原作者及贡献者所有。
 - **本扩展项目**：[eatfatno/x-ui-tab](https://github.com/eatfatno/x-ui-tab)，由 [eatfatno](https://github.com/eatfatno) 维护，负责本仓库的流量监测扩展、集成与部署工具。
-- **当前适配版本**：官方 3x-ui **v3.9.0**。官方面板与 Xray 使用上游发行包，不直接修改官方二进制、Xray 内核或面板内嵌前端。
+- **当前适配版本**：官方 3x-ui **v3.10.2**。官方面板与 Xray 使用上游发行包，不直接修改官方二进制、Xray 内核或面板内嵌前端。
 
 ## 在原项目基础上增加了什么
 
@@ -28,22 +28,22 @@ x-ui-tab 基于 [MHSanaei/3x-ui](https://github.com/MHSanaei/3x-ui) 进行功能
 
 宿主机的 `python3` 命令需为 3.10 或更新版本，用于运行安装和管理工具；Docker 服务需已启动。CentOS Stream 等启用 SELinux 的环境还需处理数据目录的容器访问标签，见 [Docker 部署说明](docs/docker-deployment.md#系统环境与依赖)。当前 Docker 验收在 WSL Ubuntu 24.04 完成，其他发行版尚未实机验收；当前未提供 ARM 镜像。
 
-**[v1.0.1 Release](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1) 已发布**，包含部署包及校验文件。Ubuntu 22.04/24.04 执行：
+**[v1.0.2 Release](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.2) 已发布**，包含部署包及校验文件。Ubuntu 22.04/24.04 执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1
+curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.2/scripts/install-online.sh | sudo bash -s -- --version v1.0.2
 ```
 
 CentOS Stream 等其他 Linux 在准备好依赖和宿主机配置后执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1 --no-install-deps
+curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.2/scripts/install-online.sh | sudo bash -s -- --version v1.0.2 --no-install-deps
 ```
 
 如果当前网络访问 `raw.githubusercontent.com` 被重置或超时，可改用 GitHub 官方 API 取得同一版本的脚本，无需 GitHub 登录：
 
 ```bash
-curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.1' | sudo bash -s -- --version v1.0.1
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.2' | sudo bash -s -- --version v1.0.2
 ```
 
 两个入口执行同一脚本，均从 GitHub Release 下载部署包；需要能访问 GitHub API 及 Release 附件 CDN。其他 Linux 使用 API 入口时，同样在末尾加 `--no-install-deps`。如果服务器没有 `curl`，Ubuntu 可先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
@@ -54,7 +54,7 @@ curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/
 
 发布与公开安装验收见 [GitHub 发布说明](docs/github-publishing.md)。GitHub Actions 自动构建与在线升级菜单尚未接入，当前镜像升级方式见下方 Docker 文档。
 
-Docker 部署及 Linux `x-ui` 管理菜单见 [Docker 部署说明](docs/docker-deployment.md)。部署包包含官方 3.9.0、Xray 和流量监测，镜像与持久数据分开。`x-ui` 支持启停、状态、日志、账号/路径/端口、HTTPS、备份恢复和镜像更新；首次凭证在所部署目录的 `data/state/credentials.json`。
+Docker 部署及 Linux `x-ui` 管理菜单见 [Docker 部署说明](docs/docker-deployment.md)。部署包包含官方 3.10.2、Xray 和流量监测，镜像与持久数据分开。`x-ui` 支持启停、状态、日志、账号/路径/端口、HTTPS、备份恢复和镜像更新；首次凭证在所部署目录的 `data/state/credentials.json`。
 
 ## 监测功能与使用
 
@@ -77,9 +77,11 @@ Docker 部署及 Linux `x-ui` 管理菜单见 [Docker 部署说明](docs/docker-
 - **过期与缺口**：第 8～35 天只有客户端流量及访问数量汇总。重置、断采、未匹配身份、日志异常分别提示；不会把未知用量自动填成零。
 - **入站筛选**：访问记录按实际入站筛选；客户端累计值本身是跨所属入站的总量，不能推导同一客户端在各入站分别用了多少字节。
 
+v1.0.1 已有部署升级到 v1.0.2：见 [升级步骤与验证结果](docs/upgrade-v1.0.2.md)，保留原部署目录和数据。
+
 ## 更新与排障
 
-参见 `docs/operations.md`。原版二进制可替换升级，监测程序和数据在独立目录。入口依赖官方 3.9 布局适配器，未知版本使用独立页面，并按检查结果更新适配器。
+参见 `docs/operations.md`。原版二进制可替换升级，监测程序和数据在独立目录。入口依赖已验收的官方 3.9.x / 3.10.2 布局适配器，未知版本使用独立页面，并按检查结果更新适配器。
 
 原面板 JS/CSS 保留官方压缩与缓存机制，临时模块请求故障有有限重试和页面恢复入口。如果旧标签页已经显示 `Failed to fetch dynamically imported module`，先 Ctrl+F5 加载新版恢复脚本。原面板页面、二维码/编辑弹窗及故障恢复验收见 `docs/test-matrix.md`，1 核峰值和完整 35 天容量见 `docs/resource-assessment.md`。
 

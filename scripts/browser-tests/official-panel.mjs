@@ -49,6 +49,11 @@ try{
     await row.getByRole('button',{name:'编辑',exact:true}).click();await page.getByRole('dialog').waitFor();await close();
     await page.getByRole('button',{name:'添加客户端',exact:true}).click();await page.getByRole('dialog').waitFor();await close();
   });
+  if(process.env.QR_REALITY_CLIENT)await check('REALITY client QR renders through the monitoring proxy',async()=>{
+    const row=page.locator('tr[data-row-key]').filter({hasText:process.env.QR_REALITY_CLIENT}).first();
+    await row.getByRole('button',{name:/二维码|QR/}).click();
+    await page.getByRole('dialog').locator('.ant-qrcode').first().waitFor();await close();
+  });
   await check('inbounds list, edit and new inbound dialogs',async()=>{
     await nav('入站','inbounds');
     const row=page.locator('tr[data-row-key]').filter({hasText:'本地验收'}).first();await row.waitFor();await row.getByRole('button',{name:'编辑',exact:true}).click();await page.getByRole('dialog').waitFor();await close();

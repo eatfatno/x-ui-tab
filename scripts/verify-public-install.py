@@ -22,7 +22,7 @@ import urllib.request
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = 'v1.0.1'
+VERSION = 'v1.0.2'
 REPO = 'eatfatno/x-ui-tab'
 SCRIPT_URL = f'https://api.github.com/repos/{REPO}/contents/scripts/install-online.sh?ref={VERSION}'
 RAW_URL = f'https://raw.githubusercontent.com/{REPO}/{VERSION}/scripts/install-online.sh'
@@ -97,7 +97,7 @@ def main():
 
         release = json.loads(fetch(RELEASE_URL))
         assert release['tag_name'] == VERSION and not release['draft'] and not release['prerelease']
-        bundle_name = 'x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz'
+        bundle_name = 'x-ui-tab-3.10.2-1.0.2-linux-amd64.tar.gz'
         assets = {a['name']: a for a in release['assets']}
         assert bundle_name in assets and bundle_name + '.sha256' in assets
         report['release_url'] = release['html_url']
@@ -128,7 +128,7 @@ def main():
                                            start_new_session=True)
                 download.stdout.close()
                 try:
-                    install_code = install.wait(timeout=600)
+                    install_code = install.wait(timeout=1500)
                     download_code = download.wait(timeout=30)
                 except BaseException:
                     for proc in (install, download):

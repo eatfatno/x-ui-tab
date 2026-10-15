@@ -1,12 +1,14 @@
 # 运行、更新与排障
 
+服务器 Docker 部署与升级以 [Docker 文档](docker-deployment.md) 和 [v1.0.2 升级步骤](upgrade-v1.0.2.md) 为准。下文 `runtime/`、`lab.py` 命令用于可选原生开发环境。
+
 ## 服务边界
 
 浏览器入口 `127.0.0.1:18080` 由独立 Go 服务提供。原面板仅监听 `127.0.0.1:12053`，Xray API 仅监听 loopback `62789`。本地验收默认关闭订阅服务。没有安装系统服务；WSL 重启后运行 `scripts/start.sh`。
 
 `runtime/monitor/config.json` 中统一设置地址、日志路径、采样周期和保留期。`detail_days` 范围 1～7，`summary_days` 范围为明细天数～35；首版默认 7/35。修改配置后仅重启监测服务。
 
-采集 Token 只在服务端读取，官方 3.9.0 的 monitor scope 不允许读取客户端列表，因此使用专用 admin Token。应用不会提供通用代请求 API；浏览器会话校验不使用该 Token。
+采集 Token 只在服务端读取，官方 3.9.0 / 3.10.2 的 monitor scope 不允许读取客户端列表，因此使用专用 admin Token。应用不会提供通用代请求 API；浏览器会话校验不使用该 Token。
 
 当前页面统一显示所选范围的合计流量，清理通过“删除日志与流量”按分钟和客户端执行。实时在线列表复用 10 秒采样并读取官方缓存在线名单；后台采集模块只读取固定接口。详细口径见 `targets-and-deletion.md`。
 
@@ -16,7 +18,7 @@
 
 ```bash
 source scripts/env.sh
-python3 scripts/upgrade-panel.py v3.9.0
+python3 scripts/upgrade-panel.py v3.10.2
 python3 scripts/verify-runtime.py
 ```
 

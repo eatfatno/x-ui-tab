@@ -35,4 +35,4 @@ if ($PrepareOnly) {
 }
 Write-Host 'Uploading the prepared source to eatfatno/x-ui-tab. Complete GitHub sign-in in the browser if prompted.'
 Invoke-ProjectGit -GitArguments @('push', '-u', 'origin', 'main')
-Write-Host 'Source uploaded. Create v1.0.1 at https://github.com/eatfatno/x-ui-tab/releases/new and attach the two files described in docs/github-publishing.md.'
+Write-Host 'Source uploaded. Create v1.0.2 at https://github.com/eatfatno/x-ui-tab/releases/new and attach the two files described in docs/github-publishing.md.'

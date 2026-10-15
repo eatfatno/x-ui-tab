@@ -16,7 +16,8 @@ import time
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-XRAY = ROOT / 'runtime/panel/bin/xray-linux-amd64'
+STAGED_XRAY = ROOT / 'artifacts/docker/context/panel/bin/xray-linux-amd64'
+XRAY = Path(os.environ.get('PROFILE_XRAY') or str(STAGED_XRAY if STAGED_XRAY.is_file() else ROOT / 'runtime/panel/bin/xray-linux-amd64'))
 
 
 def free_port():
@@ -64,6 +65,7 @@ def main():
     report = {'passed': False, 'local_only': True, 'clients': 5, 'server_cpu_affinity': 1,
               'protocol': 'VLESS/TCP/REALITY/xtls-rprx-vision', 'stages': [],
               'note': '5 distinct clients; bounded HTTP payload over encrypted REALITY on loopback. Shared WSL CPU, not a VPS throughput guarantee. Server excludes client driver, TLS decoy, HTTP source and OS.'}
+    report['xray_version'] = subprocess.check_output([str(XRAY), 'version'], text=True).splitlines()[0]
     procs = []
     logs = []
     http = ThreadingHTTPServer(('127.0.0.1', 0), Payload)

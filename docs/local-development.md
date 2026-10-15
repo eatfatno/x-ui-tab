@@ -40,6 +40,6 @@ bash scripts/build.sh
 python3 scripts/lab.py restart --only monitor
 ```
 
-从干净目录准备官方包和 Go：运行 `python3 scripts/fetch-upstream.py`，随后用 Linux `tar` 把 `tools/downloads/go1.27.1.linux-amd64.tar.gz` 解压至 `tools`，把 `upstream/3x-ui/v3.9.0/x-ui-linux-amd64.tar.gz` 去除顶层目录解压至 `runtime/panel`。最后执行 `python3 scripts/lab.py init`、构建并启动。发行包和 Go 下载均做 SHA-256 校验。
+从干净目录准备官方包和 Go：运行 `python3 scripts/fetch-upstream.py`，随后用 Linux `tar` 把 `tools/downloads/go1.27.1.linux-amd64.tar.gz` 解压至 `tools`，把 `upstream/3x-ui/v3.10.2/x-ui-linux-amd64.tar.gz` 去除顶层目录解压至 `runtime/panel`。最后执行 `python3 scripts/lab.py init`、构建并启动。发行包和 Go 下载均做 SHA-256 校验。
 
 Docker 镜像的本机构建步骤及开发专用 Docker daemon 说明见 [Docker 文档的构建与验证部分](docker-deployment.md#本机构建与验证)。服务器安装用户使用已经发布的部署包即可。

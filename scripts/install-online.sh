@@ -6,7 +6,7 @@ set -euo pipefail
 umask 077
 
 repo=eatfatno/x-ui-tab
-version=v1.0.1
+version=v1.0.2
 install_dir=/opt/x-ui-tab
 bin_dir=/usr/local/bin
 install_deps=1
@@ -21,7 +21,7 @@ project_name=x-ui-tab
 usage() {
   cat <<'HELP'
 Install the tested 3x-ui + traffic monitor GitHub release (Linux amd64).
-  --version v1.0.1             Exact published release tag (default: v1.0.1)
+  --version v1.0.2             Exact published release tag (default: v1.0.2)
   --repo eatfatno/x-ui-tab     GitHub repository
   --dir /opt/x-ui-tab          Persistent deployment directory
   --bin-dir /usr/local/bin    Management command directory
@@ -60,7 +60,7 @@ while (($#)); do
 done
 
 [[ $repo =~ ^[A-Za-z0-9-]+/[A-Za-z0-9_.-]+$ ]] || die 'Invalid GitHub repository'
-[[ $version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die 'Use an exact stable tag such as v1.0.1'
+[[ $version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die 'Use an exact stable tag such as v1.0.2'
 [[ $project_name =~ ^[a-z0-9][a-z0-9_-]*$ ]] || die 'Invalid Compose project name'
 [[ $install_dir == /* && $bin_dir == /* ]] || die 'Installation paths must be absolute'
 [[ $install_dir != *$'\n'* && $bin_dir != *$'\n'* ]] || die 'Invalid installation path'
@@ -137,6 +137,7 @@ docker info >/dev/null || die 'Docker is not reachable; start the local Docker s
 # Python validates both archive layers before any downloaded program is executed.
 package_dir=$(python3 - "$repo" "$version" "$install_dir" <<'PY'
 import hashlib
+from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path, PurePosixPath
 import re
@@ -144,7 +145,9 @@ import shutil
 import sys
 import tarfile
 import tempfile
+import urllib.error
 import urllib.request
+import urllib.parse
 
 repo, version, target = sys.argv[1:]
 target = Path(target)
@@ -169,6 +172,59 @@ def sha(path):
             value.update(chunk)
     return value.hexdigest()
 
+def fetch_asset(asset, path, limit):
+    # The official API redirect also works when github.com downloads are blocked.
+    # Small bounded ranges allow retries without restarting a large download.
+    api = asset.get('url', '')
+    if not re.fullmatch(r'https://api\.github\.com/repos/' + re.escape(repo) + r'/releases/assets/\d+', api):
+        raise ValueError('Unexpected GitHub asset API URL')
+    size = asset.get('size')
+    if type(size) is not int or not 0 < size <= limit:
+        raise ValueError('Release file exceeds its download limit')
+    headers = {'User-Agent': 'x-ui-tab-installer', 'Accept': 'application/octet-stream'}
+    if size <= 4096:
+        with urllib.request.urlopen(urllib.request.Request(api, headers=headers), timeout=60) as response:
+            if not response.url.startswith('https://'):
+                raise ValueError('Only HTTPS release downloads are supported')
+            data = response.read(size + 1)
+        if len(data) != size:
+            raise ValueError('Incomplete release asset')
+        path.write_bytes(data)
+        return
+    with urllib.request.urlopen(urllib.request.Request(api, headers=headers, method='HEAD'), timeout=60) as response:
+        signed = response.url
+    parsed = urllib.parse.urlsplit(signed)
+    if parsed.scheme != 'https' or parsed.hostname != 'release-assets.githubusercontent.com':
+        raise ValueError('Unexpected GitHub release download host')
+    block = 1024 * 1024
+    parts = (size + block - 1) // block
+    def download(index):
+        start, end = index * block, min((index + 1) * block, size) - 1
+        dest = work / ('chunk-' + str(index))
+        for attempt in range(3):
+            try:
+                request = urllib.request.Request(signed, headers={**headers, 'Range': f'bytes={start}-{end}'})
+                with urllib.request.urlopen(request, timeout=60) as response:
+                    if response.status != 206 or response.headers.get('Content-Range') != f'bytes {start}-{end}/{size}':
+                        raise ValueError('Invalid release byte range')
+                    data = response.read(end - start + 2)
+                if len(data) != end - start + 1:
+                    raise OSError('Incomplete release byte range')
+                dest.write_bytes(data)
+                return dest
+            except (OSError, urllib.error.URLError):
+                if attempt == 2:
+                    raise
+    with ThreadPoolExecutor(max_workers=8) as pool, path.open('wb') as output:
+        for index, part in enumerate(pool.map(download, range(parts)), 1):
+            with part.open('rb') as source:
+                shutil.copyfileobj(source, output)
+            part.unlink()
+            if index % 32 == 0 or index == parts:
+                print(f'Downloaded {min(index * block, size)}/{size} bytes', file=sys.stderr)
+    if path.stat().st_size != size:
+        raise ValueError('Incomplete release asset')
+
 try:
     metadata = work / 'release.json'
     fetch('https://api.github.com/repos/' + repo + '/releases/tags/' + version, metadata, 2 * 1024**2)
@@ -183,9 +239,9 @@ try:
     names = {a.get('name') for a in release['assets']}
     if asset + '.sha256' not in names:
         raise ValueError('Release is missing its SHA-256 file')
-    url = 'https://github.com/' + repo + '/releases/download/' + version + '/'
     checksum = work / (asset + '.sha256')
-    fetch(url + checksum.name, checksum, 4096)
+    checksum_asset = next(a for a in release['assets'] if a.get('name') == checksum.name)
+    fetch_asset(checksum_asset, checksum, 4096)
     line = checksum.read_text().strip()
     match = re.fullmatch(r'([0-9a-f]{64})\s+\*?' + re.escape(asset), line)
     if not match:
@@ -194,7 +250,7 @@ try:
         raise ValueError('At least 2 GiB free space is required in the deployment filesystem')
     archive = work / asset
     print('Downloading ' + asset + ' ...', file=sys.stderr)
-    fetch(url + asset, archive, 1024**3)
+    fetch_asset(assets[0], archive, 1024**3)
     if sha(archive) != match[1]:
         raise ValueError('Release checksum mismatch')
     expected_root = asset.removesuffix('.tar.gz')

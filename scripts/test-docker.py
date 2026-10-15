@@ -9,7 +9,6 @@ import json
 import os
 from pathlib import Path
 import re
-import re
 import runpy
 import shutil
 import socket
@@ -32,6 +31,7 @@ REPORT = ROOT / 'artifacts/reports/docker-acceptance.json'
 Browser = runpy.run_path(str(ROOT / 'scripts/verify-runtime.py'))['Browser']
 BASE = '/docker-check/'
 URL = 'http://127.0.0.1:28080'
+PANEL_URL = 'http://127.0.0.1:22053'
 
 
 def free_port():
@@ -52,7 +52,7 @@ def cli(*args, data=None, check=True):
 
 def api(route, data=None):
     headers = {'Authorization': 'Bearer ' + (FIXTURE / 'data/state/api-token').read_text().strip(), 'X-Requested-With': 'XMLHttpRequest'}
-    req = urllib.request.Request('http://127.0.0.1:22053' + BASE + 'panel/api/' + route,
+    req = urllib.request.Request(PANEL_URL + BASE + 'panel/api/' + route,
         data=urllib.parse.urlencode(data).encode() if data is not None else None, headers=headers)
     with urllib.request.urlopen(req, timeout=15) as r:
         result = json.load(r)
@@ -141,7 +141,22 @@ def real_traffic(checks):
             file = FIXTURE / ('client-' + str(i) + '.json'); file.write_text(json.dumps(cfg)); file.chmod(0o600)
             launch('driver-' + str(i), [str(xray), 'run', '-config', str(file)])
         time.sleep(12)
-        for port in socks:
+        for index, port in enumerate(socks):
+            if index == 1:
+                # Force the daily rotation deadline in this disposable database.
+                # Xray itself must reopen the file; real client traffic follows.
+                access = FIXTURE / 'data/logs/xray-access.log'
+                old_inode = access.stat().st_ino
+                with closing(sqlite3.connect(FIXTURE / 'data/monitor/monitor.db', timeout=30)) as db, db:
+                    db.execute("UPDATE meta SET value=? WHERE key='log_opened_at'",
+                               ((datetime.now(timezone.utc) - timedelta(hours=25)).isoformat(),))
+                # Cleanup/rotation runs once a minute, independently of 10s samples.
+                for _ in range(320):
+                    if access.exists() and access.stat().st_ino != old_inode:
+                        break
+                    time.sleep(.25)
+                else:
+                    raise AssertionError('Real Xray LoggerService did not reopen access log')
             common = ['curl', '--silent', '--show-error', '--fail', '--max-time', '15', '--noproxy', '',
                       '--socks5-hostname', '127.0.0.1:' + str(port), '-o', os.devnull]
             subprocess.run(common + ['http://localhost:' + str(http.server_port) + '/download'], check=True, capture_output=True)
@@ -152,6 +167,8 @@ def real_traffic(checks):
         visits = b.obj(BASE + 'traffic-monitor/api/v1/visits')
         assert visits['total'] == 4 and {v['email'] for v in visits['items']} == {c['email'] for c in clients}
         assert all(v['target'] == 'localhost' for v in visits['items'])
+        assert (FIXTURE / 'data/logs/xray-access.log').stat().st_size > 0
+        record(checks, 'actual Xray daily log rotation accepts later REALITY traffic without losing or duplicating visits')
         summaries = b.obj(BASE + 'traffic-monitor/api/v1/targets')
         assert summaries['total'] == 2 and all(t['visit_count'] == 2 for t in summaries['items'])
         for c in api('clients/list'):
@@ -176,17 +193,18 @@ def browser_checks():
     state = FIXTURE / 'browser-state.json'
     state.write_text(json.dumps(creds | {'base_path': BASE, 'public_url': URL}))
     state.chmod(0o600)
-    env = dict(os.environ, PANEL_STATE_FILE=str(state), BROWSER_REPORT_FILE=str(ROOT / 'artifacts/reports/docker-official-browser.json'), QR_CLIENT='docker-qr-client')
+    env = dict(os.environ, PANEL_STATE_FILE=str(state), BROWSER_REPORT_FILE=str(ROOT / 'artifacts/reports/docker-official-browser.json'),
+               QR_CLIENT='docker-qr-client', QR_REALITY_CLIENT='monitor-test-alice')
     inbound = next(i for i in api('inbounds/list') if i['tag'] == 'docker-reality-check')
     api('inbounds/setEnable/' + str(inbound['id']), {'enable': 'true'})
-    # Official v3.9 deliberately hides QR images for post-quantum REALITY
-    # links. Use a plain VLESS fixture to exercise the actual QR renderer.
+    # Exercise both ordinary VLESS and the REALITY QR renderer fixed upstream.
     qr = api('inbounds/add', {'enable': 'true', 'remark': 'QR fixture', 'tag': 'docker-qr-fixture', 'listen': '127.0.0.1',
         'port': free_port(), 'protocol': 'vless', 'settings': json.dumps({'decryption': 'none', 'clients': [{
             'id': str(uuid.uuid4()), 'email': 'docker-qr-client', 'subId': uuid.uuid4().hex[:16], 'enable': True, 'flow': ''}]}),
         'streamSettings': json.dumps({'network': 'tcp', 'security': 'none'}), 'sniffing': json.dumps({'enabled': False})})
     try:
         subprocess.run(['node', str(ROOT / 'scripts/browser-tests/official-panel.mjs')], cwd=ROOT, env=env, check=True, timeout=480)
+        subprocess.run(['node', str(ROOT / 'scripts/browser-tests/panel-recovery.mjs')], cwd=ROOT, env=env, check=True, timeout=180)
         subprocess.run(['node', str(ROOT / 'scripts/browser-tests/docker-monitor.mjs')], cwd=ROOT, env=env, check=True, timeout=180)
     finally:
         api('inbounds/del/' + str(qr['id']), {})
@@ -209,7 +227,7 @@ def main():
         if resume:
             assert 'COMPOSE_PROJECT_NAME=x-ui-docker-check' in (FIXTURE / '.env').read_text()
             previous = json.loads(REPORT.read_text())
-            report['checks'] = previous['checks'][:2]
+            report['checks'] = previous['checks'][:3]
             cli('start')
         else:
             cli('init', '--bind', '127.0.0.1', '--port', '28080', '--panel-port', '22053', '--api-port', '63789',
@@ -271,17 +289,17 @@ def main():
         cli('restore', backup, '--yes'); BASE = '/changed/'; login()
         assert fingerprint() == before
         record(report['checks'], 'autostart configuration and consistent backup/restore')
-        cli('update', 'x-ui-tab:3.9.0-1.0.1-amd64'); login()
+        cli('update', 'x-ui-tab:3.10.2-1.0.2-amd64'); login()
         assert fingerprint() == before
         record(report['checks'], 'image recreation preserves panel clients, monitor identity and retained history')
         bad_context = FIXTURE / 'bad-image'
         bad_context.mkdir()
-        (bad_context / 'Dockerfile').write_text('FROM x-ui-tab:3.9.0-1.0.1-amd64\nCMD ["deliberate-startup-failure"]\n')
+        (bad_context / 'Dockerfile').write_text('FROM x-ui-tab:3.10.2-1.0.2-amd64\nCMD ["deliberate-startup-failure"]\n')
         subprocess.run(['docker', 'build', '--network=host', '-t', 'x-ui-tab:acceptance-failure', str(bad_context)],
             env={**os.environ, 'DOCKER_BUILDKIT': '0'}, check=True, capture_output=True)
         result = cli('update', 'x-ui-tab:acceptance-failure', check=False)
         assert result.returncode != 0
-        assert 'XUI_IMAGE=x-ui-tab:3.9.0-1.0.1-amd64' in (FIXTURE / '.env').read_text()
+        assert 'XUI_IMAGE=x-ui-tab:3.10.2-1.0.2-amd64' in (FIXTURE / '.env').read_text()
         login(); assert fingerprint() == before
         record(report['checks'], 'failed image startup automatically restores the previous image and database snapshot')
         subprocess.run(['bash', str(FIXTURE / 'install.sh'), str(FIXTURE / 'test-bin')], check=True, capture_output=True)

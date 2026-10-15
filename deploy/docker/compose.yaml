@@ -1,7 +1,7 @@
 name: ${COMPOSE_PROJECT_NAME:-x-ui-tab}
 services:
   panel:
-    image: ${XUI_IMAGE:-x-ui-tab:3.9.0-1.0.1-amd64}
+    image: ${XUI_IMAGE:-x-ui-tab:3.10.2-1.0.2-amd64}
     network_mode: host
     restart: ${RESTART_POLICY:-unless-stopped}
     stop_grace_period: 40s
