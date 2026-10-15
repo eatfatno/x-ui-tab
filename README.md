@@ -6,17 +6,25 @@
 
 面向 **Linux x86_64 / amd64**。一键脚本在 Ubuntu 22.04/24.04 上可安装缺少的 Docker、Compose v2 和 Python；其他 Linux 发行版请先准备 Docker、Compose v2、Python 3.10+、curl 和 util-linux，并在命令末尾增加 `--no-install-deps`。
 
-仓库发布 **v1.0.1 Release** 并上传部署包及校验文件后，执行：
+**[v1.0.1 Release](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1) 已发布**，包含部署包及校验文件。执行：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1
 ```
 
+如果当前网络访问 `raw.githubusercontent.com` 被重置或超时，可改用 GitHub 官方 API 取得同一版本的脚本，无需 GitHub 登录：
+
+```bash
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.1' | sudo bash -s -- --version v1.0.1
+```
+
+两个入口执行同一脚本，均从 GitHub Release 下载部署包；需要能访问 GitHub API 及 Release 附件 CDN。如果服务器没有 `curl`，Ubuntu 可先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
+
 默认安装目录 `/opt/x-ui-tab`，面板入口 `http://服务器IP:18080/panel/?monitor=traffic`。首次账号密码文件 `/opt/x-ui-tab/data/state/credentials.json`，密码随机生成。执行 `sudo x-ui` 打开管理菜单；如果已有其他 `x-ui` 安装，使用 `sudo x-ui-tab`。
 
 脚本下载指定的稳定发布包，检查整体及包内 SHA-256，再导入镜像和启动。已有部署会拒绝重新初始化，请使用管理菜单更新。更换目录/端口可增加 `--dir /opt/my-x-ui --port 18081`；共存多个实例还需分别指定 `--panel-port`、`--api-port`、`--metrics-port` 和 `--project-name`。安装不自动放行云防火墙端口。
 
-发布者操作见 [GitHub 发布说明](docs/github-publishing.md)。首次发布使用已经验证的成品包；GitHub Actions 自动构建与在线升级菜单尚未接入，当前镜像升级方式见下方 Docker 文档。
+发布与公开安装验收见 [GitHub 发布说明](docs/github-publishing.md)。GitHub Actions 自动构建与在线升级菜单尚未接入，当前镜像升级方式见下方 Docker 文档。
 
 Docker 部署及 Linux `x-ui` 管理菜单见 [Docker 部署说明](docs/docker-deployment.md)。部署包面向 Linux amd64，包含官方 3.9.0 和流量监测，镜像与持久数据分开。`x-ui` 支持启停、状态、日志、账号/路径/端口、HTTPS、备份恢复和镜像更新；首次凭证在所部署目录的 `data/state/credentials.json`。WSL 原生开发环境仍按下文管理，凭证位置与 Docker 环境不同。
 

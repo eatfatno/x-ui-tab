@@ -1,5 +1,9 @@
 # Docker 打包进度与暂停记录
 
+## 当前交付版本
+
+正式交付为 [v1.0.1](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1)，本地文件 `artifacts/docker/x-ui-tab-3.9.0-1.0.1-linux-amd64.tar.gz`。1.0.1 修复首次初始化竞态。下文 1.0.0 及暂停信息是历史记录，最新发布状态见 `github-publishing-progress.md`。
+
 ## 2026-10-12 已继续完成
 
 Docker 镜像、Compose、20 项 Linux `x-ui` 菜单、离线部署包、源码和说明已生成。15 项容器功能验收、17 项官方浏览器检查、4 项监测浏览器检查及 3 项日志恢复专项测试通过。数据备份/恢复和失败镜像回滚已验证；修复跨文件系统恢复后的日志重复计数。交付位置为 `artifacts/docker/x-ui-tab-3.9.0-1.0.0-linux-amd64.tar.gz`，安装与使用见 `docs/docker-deployment.md`。以下为 10 月 10 日的暂停历史记录。

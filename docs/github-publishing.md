@@ -2,6 +2,8 @@
 
 仓库网页：https://github.com/eatfatno/x-ui-tab 。Git 远程地址：https://github.com/eatfatno/x-ui-tab.git 。两者指向同一个仓库。
 
+源码和正式 [Release v1.0.1](https://github.com/eatfatno/x-ui-tab/releases/tag/v1.0.1) 已于 2026-10-12 发布，两个附件已上传并通过 GitHub SHA-256 核对。安装用户直接使用第 3 节；第 1、2 节保留为维护者发布流程，不需要重复创建已有版本或移动标签。
+
 ## 1. 上传整理好的源码
 
 先在 WSL 项目根目录执行 `source scripts/env.sh`，再执行 `python3 scripts/prepare-github.py`。脚本只选择源码、配置模板、文档和许可证；排除依赖安装目录、数据库、凭证、日志、缓存和构建结果，并对常见凭证格式及本机私有配置中的敏感值进行检查。完整待发布文件清单保存在 `artifacts/github/source-manifest.json`。
@@ -50,15 +52,23 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\publish-github.ps1
 
 ## 3. 服务器安装
 
-完成源码及 Release 发布后，Ubuntu 22.04/24.04 x86_64 服务器执行：
+Ubuntu 22.04/24.04 x86_64 服务器执行：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/install-online.sh | sudo bash -s -- --version v1.0.1
 ```
 
+若 `raw.githubusercontent.com` 连接被重置或超时，可使用 GitHub 官方 API 的原始文件响应：
+
+```bash
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/eatfatno/x-ui-tab/contents/scripts/install-online.sh?ref=v1.0.1' | sudo bash -s -- --version v1.0.1
+```
+
+两个入口都固定为 `v1.0.1`，脚本内容相同，不经过第三方镜像，不需要 GitHub 凭证。备用入口仍需要访问 GitHub API 和 Release 附件 CDN。如果 `curl` 尚未安装，Ubuntu 先执行 `sudo apt-get update && sudo apt-get install -y curl ca-certificates`。
+
 默认目录 `/opt/x-ui-tab`，首次账号密码文件 `/opt/x-ui-tab/data/state/credentials.json`。使用 `sudo x-ui` 管理；原来已有其他 x-ui 时使用 `sudo x-ui-tab`，完整路径 `/opt/x-ui-tab/x-ui` 始终可用。Web 密码修改后请以实际设置为准。
 
-下载脚本需要访问 `raw.githubusercontent.com`、`api.github.com`、`github.com` 及 GitHub Release 附件 CDN。网络无法访问时可下载两个 Release 附件并按照 [离线部署说明](docker-deployment.md) 手工安装。
+默认脚本入口需要访问 `raw.githubusercontent.com`；备用入口使用 `api.github.com`。安装过程还需要 `api.github.com`、`github.com` 及 GitHub Release 附件 CDN。网络无法访问时可下载两个 Release 附件并按照 [离线部署说明](docker-deployment.md) 手工安装。
 
 已有 Docker 的主机会保留现有运行环境；Docker daemon 未启动时脚本报错并提示先启动。只给未安装 Docker 的受支持 Ubuntu 主机安装官方 Docker 软件包；检测到已有其他容器运行时会停止自动处理，避免替换系统组件。镜像导入使用本地 Docker 服务，和管理脚本相同，不支持远程 Docker context。
 
@@ -68,6 +78,12 @@ curl -fsSL https://raw.githubusercontent.com/eatfatno/x-ui-tab/v1.0.1/scripts/in
 
 `scripts/test-online-installer.py` 检查哈希不符、异常归档、路径越界、链接、版本/架构不符及已有文件保护。`scripts/verify-online-install.py` 使用本地 GitHub 下载模拟和实际 Docker 包，完成真实解压、导入、启动、登录及重复安装保护；所有测试目录与 Docker 存储均在本项目内。
 
-本地测试不代表 GitHub Release 已发布。发布后的真实 URL、Git 身份验证以及干净 Ubuntu 主机自动安装系统依赖还需在对应环境确认。已有 Docker/Python 的 WSL 验证不会修改本机 apt 软件源。
+2026-10-15 已完成真实公开下载与 WSL 安装验证。通过 GitHub 官方 API 取得标签中的脚本，并从 GitHub Release 附件 CDN 下载完整的 177,133,451 字节部署包，SHA-256 与 GitHub digest 和校验文件一致；这次没有模拟下载或使用 GitHub 凭证。
+
+当前网络直连 `raw.githubusercontent.com` 被重置。使用 API 入口的单连接在线安装测试在 600 秒内未下载完大文件，因此该次在线完整流程没有通过。随后采用 HTTPS 分段下载完整官方包，再在项目专用 Docker daemon 中离线安装；7 项检查和 4 项 Chromium 浏览器检查通过，包括新凭证登录、登录边界、嵌入页、分钟筛选、删除弹窗、手机布局、刷新、独立页和已有数据保护。测试容器随后移除。
+
+证据保存在本地 `artifacts/reports/public-release-download.json`、`public-bundle-install.json` 和 `public-online-install.json`。可用 `scripts/verify-public-install.py` 重现单连接在线验证，或传入 `--offline-bundle <已下载包的项目内路径>` 重现公开包安装检查；后者会重新核对 GitHub digest、整包和包内文件哈希。两个模式分别记录报告，避免把离线安装算成在线流程通过。
+
+干净 Ubuntu 主机自动安装系统依赖尚未实际验证。WSL 使用已有 Docker/Compose/Python，未修改宿主机 apt 软件源。对网络不能稳定下载 Release 附件的服务器，使用前文的离线部署方式。
 
 当前 `x-ui update` 接受已导入镜像，自动备份、检查启动状态并在失败时恢复；从 GitHub 在线升级及 Actions 自动构建不包含在此次安装入口交付中。
